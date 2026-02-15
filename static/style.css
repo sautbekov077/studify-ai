@@ -1,0 +1,274 @@
+/* --- Сброс и База --- */
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    color: #333;
+    overflow: hidden; /* Чтобы не скроллился body, только чат */
+}
+
+/* Контейнер мобильного приложения */
+.container {
+    width: 100%;
+    max-width: 600px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+}
+
+/* --- Оверлей Авторизации --- */
+.auth-overlay {
+    position: absolute; /* Поверх всего в контейнере */
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.98);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+.auth-overlay.hidden { display: none; }
+
+.auth-box {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.auth-logo img { width: 80px; border-radius: 16px; margin-bottom: 15px; }
+.auth-subtitle { color: #888; margin-bottom: 25px; font-size: 14px; }
+
+.auth-box input {
+    width: 100%;
+    padding: 14px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 16px;
+    background: #fafafa;
+    outline: none;
+    transition: border 0.2s;
+}
+.auth-box input:focus { border-color: #1ABC9C; background: #fff; }
+
+.primary-btn {
+    width: 100%;
+    padding: 14px;
+    background: #1ABC9C;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background 0.2s;
+}
+.primary-btn:hover { background: #16a085; }
+
+.auth-footer { margin-top: 20px; font-size: 14px; }
+#switch-action { color: #1ABC9C; cursor: pointer; font-weight: 600; }
+.error-text { color: #e74c3c; font-size: 13px; margin-top: 10px; }
+
+/* --- Основной UI --- */
+.top-bar {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    z-index: 10;
+}
+.brand { font-weight: 700; font-size: 18px; }
+.highlight { color: #1ABC9C; }
+.logout-btn { background: none; border: none; cursor: pointer; color: #666; padding: 5px; }
+
+/* Приветствие */
+.welcome-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+.welcome-box.minimized { display: none; }
+.logo-wrapper { 
+    width: 100px; height: 100px; 
+    border-radius: 20px; 
+    overflow: hidden; 
+    margin-bottom: 20px; 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+}
+.logo { width: 100%; height: 100%; object-fit: cover; }
+.welcome-box h1 { margin: 0; font-size: 22px; color: #333; }
+.welcome-box p { color: #888; font-size: 14px; max-width: 250px; line-height: 1.5; }
+
+/* Чат */
+.chat-box {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scroll-behavior: smooth;
+    padding-bottom: 10px;
+}
+.chat-box.hidden { display: none; }
+
+.message {
+    padding: 12px 16px;
+    border-radius: 18px;
+    max-width: 85%;
+    line-height: 1.5;
+    font-size: 15px;
+    position: relative;
+    word-wrap: break-word;
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.user-msg {
+    background-color: #333; /* Темный стиль для юзера */
+    color: #fff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+.user-image {
+    max-width: 100%;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.ai-msg {
+    background-color: #f7f7f7;
+    color: #333;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+.ai-msg.error { background: #ffebeb; color: #d8000c; border: 1px solid #ffd2d2; }
+
+/* Markdown Styles */
+.ai-msg strong { font-weight: 600; color: #000; }
+.ai-msg ul, .ai-msg ol { margin: 5px 0 5px 20px; padding: 0; }
+.ai-msg pre {
+    background: #232323;
+    color: #e0e0e0;
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    margin: 8px 0;
+}
+.ai-msg code { font-family: monospace; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; }
+.ai-msg pre code { background: transparent; padding: 0; }
+
+/* --- Нижняя панель --- */
+.bottom-panel {
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    padding-bottom: 15px;
+    flex-shrink: 0; /* Чтобы не сжималась */
+}
+
+/* Превью загрузки */
+#image-preview-container { padding: 10px 20px 0; }
+.preview-wrapper { position: relative; display: inline-block; }
+#image-preview { height: 60px; border-radius: 10px; border: 1px solid #ddd; }
+#remove-image {
+    position: absolute; top: -8px; right: -8px;
+    background: #ff5252; color: white; border: none;
+    border-radius: 50%; width: 22px; height: 22px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+}
+
+/* Селектор Моделей */
+.model-selector {
+    display: flex;
+    gap: 8px;
+    padding: 10px 20px;
+    overflow-x: auto;
+    scrollbar-width: none; /* Скрыть скроллбар */
+}
+.model-selector::-webkit-scrollbar { display: none; }
+
+.model-btn {
+    background: #f5f5f5;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: #666;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+.model-btn.active {
+    background: #e0f2f1; /* Светлый teal */
+    color: #009688;
+    font-weight: 600;
+}
+
+/* Поле Ввода */
+.input-area {
+    padding: 5px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+#attach-btn {
+    background: none; border: none; cursor: pointer; padding: 8px;
+    transition: transform 0.2s;
+}
+#attach-btn:hover { transform: scale(1.1); }
+
+#user-input {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: 25px;
+    border: 1px solid #eee;
+    background: #f9f9f9;
+    font-size: 16px;
+    outline: none;
+}
+#user-input:focus { border-color: #1ABC9C; background: #fff; }
+
+#send-btn {
+    background: #1ABC9C;
+    border: none;
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    display: flex; justify-content: center; align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
+    transition: transform 0.1s;
+}
+#send-btn:active { transform: scale(0.95); }
+
+/* Индикатор */
+.typing-indicator { padding: 10px 20px; display: flex; gap: 4px; }
+.typing-indicator span {
+    width: 6px; height: 6px; background: #ccc; border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+.hidden { display: none !important; }
