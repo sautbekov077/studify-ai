@@ -1,4 +1,4 @@
-/* --- Сброс и База --- */
+/* --- RESET & BASE --- */
 * { box-sizing: border-box; }
 
 body {
@@ -9,10 +9,9 @@ body {
     justify-content: center;
     height: 100vh;
     color: #333;
-    overflow: hidden; /* Чтобы не скроллился body, только чат */
+    overflow: hidden;
 }
 
-/* Контейнер мобильного приложения */
 .container {
     width: 100%;
     max-width: 600px;
@@ -21,248 +20,144 @@ body {
     flex-direction: column;
     height: 100%;
     position: relative;
-    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    box-shadow: 0 0 30px rgba(0,0,0,0.1);
 }
 
-/* --- Оверлей Авторизации --- */
+.hidden { display: none !important; }
+
+/* --- AUTH OVERLAY --- */
 .auth-overlay {
-    position: absolute; /* Поверх всего в контейнере */
-    top: 0; left: 0; right: 0; bottom: 0;
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(255, 255, 255, 0.98);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    padding: 20px;
+    display: flex; justify-content: center; align-items: center;
+    z-index: 2000; padding: 20px;
 }
-.auth-overlay.hidden { display: none; }
-
-.auth-box {
-    width: 100%;
-    max-width: 320px;
-    text-align: center;
-}
-
-.auth-logo img { width: 80px; border-radius: 16px; margin-bottom: 15px; }
-.auth-subtitle { color: #888; margin-bottom: 25px; font-size: 14px; }
+.auth-box { width: 100%; max-width: 320px; text-align: center; }
+.auth-logo img { width: 80px; border-radius: 16px; margin-bottom: 20px; }
+#auth-title { margin-bottom: 20px; color: #333; }
 
 .auth-box input {
-    width: 100%;
-    padding: 14px;
-    margin: 8px 0;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    font-size: 16px;
-    background: #fafafa;
-    outline: none;
-    transition: border 0.2s;
+    width: 100%; padding: 14px; margin: 8px 0;
+    border: 1px solid #ddd; border-radius: 12px;
+    background: #fafafa; outline: none; font-size: 16px;
 }
 .auth-box input:focus { border-color: #1ABC9C; background: #fff; }
 
 .primary-btn {
-    width: 100%;
-    padding: 14px;
-    background: #1ABC9C;
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 15px;
-    transition: background 0.2s;
+    width: 100%; padding: 14px; background: #1ABC9C; color: white;
+    border: none; border-radius: 12px; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-top: 15px; transition: background 0.2s;
 }
 .primary-btn:hover { background: #16a085; }
+.primary-btn:disabled { background: #ccc; cursor: not-allowed; }
 
 .auth-footer { margin-top: 20px; font-size: 14px; }
 #switch-action { color: #1ABC9C; cursor: pointer; font-weight: 600; }
 .error-text { color: #e74c3c; font-size: 13px; margin-top: 10px; }
+.success-text { color: #2ecc71; font-size: 13px; margin-top: 10px; }
 
-/* --- Основной UI --- */
-.top-bar {
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #fff;
-    z-index: 10;
+/* Forgot Password Links */
+.forgot-link {
+    font-size: 13px; color: #1ABC9C; cursor: pointer;
+    margin: 5px 0 10px; text-align: right; width: 100%;
 }
-.brand { font-weight: 700; font-size: 18px; }
-.highlight { color: #1ABC9C; }
-.logout-btn { background: none; border: none; cursor: pointer; color: #666; padding: 5px; }
 
-/* Приветствие */
+/* --- PROFILE MODAL --- */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 3000;
+    display: flex; justify-content: center; align-items: center;
+}
+.modal-content {
+    background: white; width: 320px; border-radius: 20px;
+    padding: 30px 25px; position: relative; text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+}
+.close-modal {
+    position: absolute; top: 10px; right: 15px;
+    font-size: 28px; cursor: pointer; color: #aaa; line-height: 1;
+}
+.avatar-circle {
+    width: 70px; height: 70px; background: #e0f2f1;
+    border-radius: 50%; margin: 0 auto 15px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; color: #1ABC9C;
+}
+/* SVG Avatar Placeholder */
+.avatar-circle::after {
+    content: ''; width: 40px; height: 40px;
+    background-color: currentColor;
+    mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>') no-repeat center;
+    -webkit-mask: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>') no-repeat center;
+}
+
+.profile-header h2 { font-size: 18px; margin: 0 0 20px; color: #333; word-break: break-all; }
+.detail-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid #f0f0f0;
+    font-size: 15px;
+}
+.detail-item .label { color: #888; }
+.detail-item .value { font-weight: 600; font-family: monospace; font-size: 16px; letter-spacing: 1px; color: #333; }
+.tag {
+    background: #eee; padding: 4px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 700; color: #666;
+}
+.tag.pro { background: linear-gradient(135deg, #1ABC9C, #3498db); color: white; }
+
+.logout-btn-large {
+    width: 100%; padding: 12px; margin-top: 25px;
+    background: #fff5f5; color: #e74c3c;
+    border: none; border-radius: 12px; cursor: pointer; font-weight: 600;
+}
+
+/* --- TOP BAR --- */
+.top-bar {
+    padding: 15px 20px; display: flex; justify-content: flex-end;
+    position: absolute; top: 0; right: 0; width: 100%; z-index: 100;
+}
+.profile-icon-btn {
+    background: white; border: none; cursor: pointer;
+    color: #555; padding: 8px; border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.profile-icon-btn:hover { color: #1ABC9C; transform: scale(1.1); }
+
+/* --- WELCOME & CHAT --- */
 .welcome-box {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 20px;
-    opacity: 1;
-    transition: opacity 0.3s;
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+    padding: 20px; transition: opacity 0.3s;
 }
 .welcome-box.minimized { display: none; }
-.logo-wrapper { 
-    width: 100px; height: 100px; 
-    border-radius: 20px; 
-    overflow: hidden; 
-    margin-bottom: 20px; 
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
-}
-.logo { width: 100%; height: 100%; object-fit: cover; }
-.welcome-box h1 { margin: 0; font-size: 22px; color: #333; }
-.welcome-box p { color: #888; font-size: 14px; max-width: 250px; line-height: 1.5; }
+.logo-wrapper { width: 100px; margin-bottom: 20px; }
+.logo { width: 100%; border-radius: 20px; }
+.highlight { color: #1ABC9C; }
 
-/* Чат */
 .chat-box {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    scroll-behavior: smooth;
-    padding-bottom: 10px;
+    flex: 1; padding: 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 15px;
+    margin-top: 50px; /* Space for top bar */
 }
-.chat-box.hidden { display: none; }
-
 .message {
-    padding: 12px 16px;
-    border-radius: 18px;
-    max-width: 85%;
-    line-height: 1.5;
-    font-size: 15px;
-    position: relative;
-    word-wrap: break-word;
+    padding: 12px 16px; border-radius: 18px; max-width: 85%;
+    line-height: 1.5; font-size: 15px; position: relative; word-wrap: break-word;
     animation: fadeIn 0.3s ease;
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.user-msg {
-    background-color: #333; /* Темный стиль для юзера */
-    color: #fff;
-    align-self: flex-end;
-    border-bottom-right-radius: 4px;
-}
-.user-image {
-    max-width: 100%;
-    border-radius: 12px;
-    margin-bottom: 8px;
-    display: block;
-}
+.user-msg { background-color: #333; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+.user-image { max-width: 100%; border-radius: 8px; margin-bottom: 5px; display: block; }
+.ai-msg { background-color: #f7f7f7; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; }
+.ai-msg.error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
 
-.ai-msg {
-    background-color: #f7f7f7;
-    color: #333;
-    align-self: flex-start;
-    border-bottom-left-radius: 4px;
-}
-.ai-msg.error { background: #ffebeb; color: #d8000c; border: 1px solid #ffd2d2; }
+/* Markdown */
+.ai-msg pre { background: #222; color: #eee; padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+.ai-msg code { background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+.ai-msg strong { font-weight: 700; }
 
-/* Markdown Styles */
-.ai-msg strong { font-weight: 600; color: #000; }
-.ai-msg ul, .ai-msg ol { margin: 5px 0 5px 20px; padding: 0; }
-.ai-msg pre {
-    background: #232323;
-    color: #e0e0e0;
-    padding: 10px;
-    border-radius: 8px;
-    overflow-x: auto;
-    font-size: 13px;
-    margin: 8px 0;
-}
-.ai-msg code { font-family: monospace; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; }
-.ai-msg pre code { background: transparent; padding: 0; }
-
-/* --- Нижняя панель --- */
-.bottom-panel {
-    background: #fff;
-    border-top: 1px solid #f0f0f0;
-    padding-bottom: 15px;
-    flex-shrink: 0; /* Чтобы не сжималась */
-}
-
-/* Превью загрузки */
-#image-preview-container { padding: 10px 20px 0; }
-.preview-wrapper { position: relative; display: inline-block; }
-#image-preview { height: 60px; border-radius: 10px; border: 1px solid #ddd; }
-#remove-image {
-    position: absolute; top: -8px; right: -8px;
-    background: #ff5252; color: white; border: none;
-    border-radius: 50%; width: 22px; height: 22px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 12px;
-}
-
-/* Селектор Моделей */
-.model-selector {
-    display: flex;
-    gap: 8px;
-    padding: 10px 20px;
-    overflow-x: auto;
-    scrollbar-width: none; /* Скрыть скроллбар */
-}
-.model-selector::-webkit-scrollbar { display: none; }
-
-.model-btn {
-    background: #f5f5f5;
-    border: none;
-    border-radius: 20px;
-    padding: 8px 14px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    color: #666;
-    white-space: nowrap;
-    transition: all 0.2s;
-}
-.model-btn.active {
-    background: #e0f2f1; /* Светлый teal */
-    color: #009688;
-    font-weight: 600;
-}
-
-/* Поле Ввода */
-.input-area {
-    padding: 5px 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-#attach-btn {
-    background: none; border: none; cursor: pointer; padding: 8px;
-    transition: transform 0.2s;
-}
-#attach-btn:hover { transform: scale(1.1); }
-
-#user-input {
-    flex: 1;
-    padding: 12px 18px;
-    border-radius: 25px;
-    border: 1px solid #eee;
-    background: #f9f9f9;
-    font-size: 16px;
-    outline: none;
-}
-#user-input:focus { border-color: #1ABC9C; background: #fff; }
-
-#send-btn {
-    background: #1ABC9C;
-    border: none;
-    border-radius: 50%;
-    width: 44px; height: 44px;
-    display: flex; justify-content: center; align-items: center;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
-    transition: transform 0.1s;
-}
-#send-btn:active { transform: scale(0.95); }
-
-/* Индикатор */
+/* Typing Indicator */
 .typing-indicator { padding: 10px 20px; display: flex; gap: 4px; }
 .typing-indicator span {
     width: 6px; height: 6px; background: #ccc; border-radius: 50%;
@@ -271,4 +166,69 @@ body {
 .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
 .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
 @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-.hidden { display: none !important; }
+
+/* --- BOTTOM PANEL --- */
+.bottom-panel { background: white; border-top: 1px solid #f0f0f0; padding-bottom: 20px; }
+
+#image-preview-container { padding: 0 20px; }
+.preview-wrapper { position: relative; display: inline-block; margin-top: 10px;}
+#image-preview { height: 60px; border-radius: 8px; border: 1px solid #ddd; }
+#remove-image {
+    position: absolute; top: -8px; right: -8px; background: #ff5252;
+    color: white; border: none; border-radius: 50%; width: 20px; height: 20px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+
+.model-selector { display: flex; gap: 10px; padding: 15px 20px 10px; overflow-x: auto; }
+.model-btn {
+    background: #f5f5f5; border: none; border-radius: 20px; padding: 8px 14px;
+    font-size: 13px; display: flex; align-items: center; gap: 6px; cursor: pointer;
+    color: #666; white-space: nowrap; transition: all 0.2s;
+}
+.model-btn svg { width: 16px; height: 16px; }
+.model-btn.active { background: #e0f2f1; color: #1ABC9C; font-weight: 600; }
+
+.input-area { padding: 5px 20px 0; display: flex; align-items: center; gap: 10px; }
+#attach-btn { background: none; border: none; cursor: pointer; padding: 8px; color: #888; transition: color 0.2s; }
+#attach-btn:hover { color: #1ABC9C; }
+
+#user-input {
+    flex: 1; padding: 12px 18px; border-radius: 25px; border: 1px solid #eee;
+    background: #f9f9f9; font-size: 16px; outline: none; transition: all 0.2s;
+}
+#user-input:focus { border-color: #1ABC9C; background: white; }
+
+#send-btn {
+    width: 44px; height: 44px; border-radius: 50%; background: #1ABC9C;
+    border: none; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3); color: white; flex-shrink: 0;
+}
+#send-btn svg { width: 20px; height: 20px; }
+#send-btn:active { transform: scale(0.95); }
+
+/* --- EXTRA: KaTeX & Code Styles --- */
+.katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 5px 0;
+    margin: 10px 0;
+}
+.katex { font-size: 1.1em; }
+
+.ai-msg pre {
+    background: #282c34 !important;
+    color: #abb2bf;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    margin: 10px 0;
+}
+.ai-msg code { font-family: 'Fira Code', 'Consolas', monospace; }
+.ai-msg :not(pre) > code {
+    background: rgba(0,0,0,0.06);
+    color: #d63384;
+    padding: 2px 5px;
+    border-radius: 4px;
+}

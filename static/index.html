@@ -4,116 +4,114 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Studify.AI</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png"> 
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-box">
-            <div class="auth-logo">
-                <img src="/static/logo.png" alt="Logo">
-            </div>
-            <h2 id="auth-title">Вход в Studify</h2>
-            <p class="auth-subtitle">Твой персональный ИИ-ментор</p>
-            
+            <div class="auth-logo"><img src="/static/logo.png" alt="Logo"></div>
+            <h2 id="auth-title">Вход</h2>
             <form id="auth-form" onsubmit="return false;">
                 <input type="email" id="auth-email" placeholder="Email" required autocomplete="email">
                 <input type="password" id="auth-password" placeholder="Пароль" required autocomplete="current-password">
+                <div id="forgot-pass-link" class="forgot-link">Забыли пароль?</div>
                 <button type="submit" id="auth-btn" class="primary-btn">Войти</button>
             </form>
-
+            <form id="reset-form" class="hidden" onsubmit="return false;">
+                <input type="email" id="reset-email" placeholder="Email" required>
+                <button id="send-code-btn" class="primary-btn">Получить код</button>
+                <div id="code-section" class="hidden">
+                    <input type="text" id="reset-code" placeholder="Код" maxlength="6">
+                    <input type="password" id="new-password" placeholder="Новый пароль">
+                    <button id="confirm-reset-btn" class="primary-btn">Сменить пароль</button>
+                </div>
+                <div id="back-to-login" class="forgot-link">Назад</div>
+            </form>
             <div class="auth-footer">
-                <p id="auth-switch">Нет аккаунта? <span id="switch-action">Зарегистрироваться</span></p>
+                <p id="auth-switch-text">Нет аккаунта? <span id="switch-action">Зарегистрироваться</span></p>
                 <p id="auth-error" class="error-text hidden"></p>
+                <p id="auth-success" class="success-text hidden"></p>
             </div>
         </div>
     </div>
 
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="profile-header">
+                <div class="avatar-circle"></div>
+                <h2 id="profile-email">...</h2>
+            </div>
+            <div class="profile-details">
+                <div class="detail-item"><span class="label">ID:</span><span id="profile-id" class="value">...</span></div>
+                <div class="detail-item"><span class="label">Статус:</span><span id="profile-status" class="tag">FREE</span></div>
+            </div>
+            <button id="logout-btn-modal" class="logout-btn-large">Выйти</button>
+        </div>
+    </div>
+
     <div class="container">
-        
         <div class="top-bar">
-            <div class="brand">Studify<span class="highlight">.AI</span></div>
-            <button id="logout-btn" class="logout-btn hidden" title="Выйти">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
+            <button id="open-profile-btn" class="profile-icon-btn hidden">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             </button>
         </div>
 
         <div id="welcome-screen" class="welcome-box">
-            <div class="logo-wrapper">
-                <img src="/static/logo.jpg" alt="Studify Logo" class="logo">
-            </div>
-            <h1>Привет! Я Studify.AI</h1>
-            <p>Выбери режим ниже или просто напиши мне. Тестовый продукт @sautbekov077</p>
+            <div class="logo-wrapper"><img src="/static/logo.png" alt="Logo" class="logo"></div>
+            <h1>Studify<span class="highlight">.AI</span></h1>
+            <p>Учись, планируй, кодь.</p>
         </div>
 
         <div id="chat-box" class="chat-box hidden"></div>
-
-        <div id="typing-indicator" class="typing-indicator hidden">
-            <span></span><span></span><span></span>
-        </div>
+        <div id="typing-indicator" class="typing-indicator hidden"><span></span><span></span><span></span></div>
 
         <div class="bottom-panel">
-            
             <div id="image-preview-container" class="hidden">
-                <div class="preview-wrapper">
-                    <img id="image-preview" src="" alt="Preview">
-                    <button id="remove-image">✕</button>
-                </div>
+                <div class="preview-wrapper"><img id="image-preview" src="" alt="Preview"><button id="remove-image">✕</button></div>
             </div>
 
             <div class="model-selector">
-                <button class="model-btn active" data-model="notes">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    Конспект
+                <button class="model-btn active" data-model="chat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Чат
+                </button>
+                <button class="model-btn" data-model="planner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> План
+                </button>
+                <button class="model-btn" data-model="coding">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Код
+                </button>
+                <button class="model-btn" data-model="notes">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg> Конспект
                 </button>
                 <button class="model-btn" data-model="search">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    Поиск
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Поиск
                 </button>
                 <button class="model-btn" data-model="eye">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    Око
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Око
                 </button>
             </div>
 
             <div class="input-area">
                 <input type="file" id="file-input" accept="image/*" hidden>
-                
-                <button id="attach-btn" title="Прикрепить фото">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-                    </svg>
-                </button>
-
-                <input type="text" id="user-input" placeholder="Задай вопрос..." autocomplete="off">
-                
-                <button id="send-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
+                <button id="attach-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></button>
+                <input type="text" id="user-input" placeholder="Сообщение..." autocomplete="off">
+                <button id="send-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
             </div>
         </div>
     </div>
-
     <script src="/static/script.js"></script>
 </body>
 </html>

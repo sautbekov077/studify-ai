@@ -1,304 +1,328 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // UI Elements
-    const authOverlay = document.getElementById('auth-overlay');
-    const authForm = document.getElementById('auth-form');
-    const authEmail = document.getElementById('auth-email');
-    const authPass = document.getElementById('auth-password');
-    const authBtn = document.getElementById('auth-btn');
-    const authSwitch = document.getElementById('auth-switch');
-    const switchAction = document.getElementById('switch-action');
-    const authError = document.getElementById('auth-error');
-    const authTitle = document.getElementById('auth-title');
-    const logoutBtn = document.getElementById('logout-btn');
+    console.log("🚀 Studify System v3.0 Loaded");
 
-    const chatBox = document.getElementById('chat-box');
-    const welcomeScreen = document.getElementById('welcome-screen');
-    const typingIndicator = document.getElementById('typing-indicator');
-    const userInput = document.getElementById('user-input');
-    const sendBtn = document.getElementById('send-btn');
-    const modelBtns = document.querySelectorAll('.model-btn');
+    // --- HELPERS ---
+    function get(id) { return document.getElementById(id); }
+    function hide(el) { if(el) el.classList.add('hidden'); }
+    function show(el) { if(el) el.classList.remove('hidden'); }
 
-    // Image Elements
-    const attachBtn = document.getElementById('attach-btn');
-    const fileInput = document.getElementById('file-input');
-    const imagePreviewContainer = document.getElementById('image-preview-container');
-    const imagePreview = document.getElementById('image-preview');
-    const removeImageBtn = document.getElementById('remove-image');
+    // --- ELEMENTS ---
+    const els = {
+        authOverlay: get('auth-overlay'),
+        authForm: get('auth-form'),
+        authEmail: get('auth-email'),
+        authPass: get('auth-password'),
+        authBtn: get('auth-btn'),
+        authSwitch: get('switch-action'),
+        authTitle: get('auth-title'),
+        authError: get('auth-error'),
+        
+        forgotLink: get('forgot-pass-link'),
+        resetForm: get('reset-form'),
+        resetEmail: get('reset-email'),
+        sendCodeBtn: get('send-code-btn'),
+        codeSection: get('code-section'),
+        resetCode: get('reset-code'),
+        newPass: get('new-password'),
+        confirmResetBtn: get('confirm-reset-btn'),
+        backToLogin: get('back-to-login'),
+        
+        openProfileBtn: get('open-profile-btn'),
+        profileModal: get('profile-modal'),
+        closeModal: document.querySelector('.close-modal'),
+        logoutBtn: get('logout-btn-modal'),
+        pEmail: get('profile-email'),
+        pId: get('profile-id'),
+        pStatus: get('profile-status'),
+        
+        chatBox: get('chat-box'),
+        welcome: get('welcome-screen'),
+        typing: get('typing-indicator'),
+        input: get('user-input'),
+        sendBtn: get('send-btn'),
+        attachBtn: get('attach-btn'),
+        fileInput: get('file-input'),
+        previewCont: get('image-preview-container'),
+        previewImg: get('image-preview'),
+        removeImg: get('remove-image'),
+        modelBtns: document.querySelectorAll('.model-btn')
+    };
 
-    // State
     let isLoginMode = true;
-    let currentModel = 'notes';
+    let currentModel = 'chat';
     let currentImageBase64 = null;
 
-    // --- 1. АВТОРИЗАЦИЯ ---
-
-    // Проверка токена при старте
+    // --- 1. INIT & SESSION CHECK ---
     const token = localStorage.getItem('access_token');
-    if (token) {
-        showApp();
+    
+    // Проверка на "битый" токен при старте
+    if (token && token !== "undefined" && token !== "null") {
+        initializeSession();
     } else {
-        authOverlay.classList.remove('hidden');
+        // Если токен мусорный — чистим его
+        localStorage.removeItem('access_token');
+        show(els.authOverlay);
     }
 
-    // Переключение Вход / Регистрация
-    switchAction.addEventListener('click', () => {
-        isLoginMode = !isLoginMode;
-        if (isLoginMode) {
-            authTitle.textContent = "Вход в Studify";
-            authBtn.textContent = "Войти";
-            authSwitch.childNodes[0].textContent = "Нет аккаунта? ";
-            switchAction.textContent = "Зарегистрироваться";
-        } else {
-            authTitle.textContent = "Регистрация";
-            authBtn.textContent = "Создать аккаунт";
-            authSwitch.childNodes[0].textContent = "Есть аккаунт? ";
-            switchAction.textContent = "Войти";
-        }
-        authError.classList.add('hidden');
-    });
+    function initializeSession() {
+        hide(els.authOverlay);
+        show(els.openProfileBtn);
+        loadProfile(); // Загружаем данные
+    }
 
-    // Обработка формы
-    authBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const email = authEmail.value;
-        const password = authPass.value;
-
-        if (!email || !password) {
-            showError("Пожалуйста, заполните все поля");
-            return;
-        }
-
-        authBtn.disabled = true;
-        authBtn.textContent = "Загрузка...";
-
-        try {
-            const endpoint = isLoginMode ? '/token' : '/register';
-            let response;
-
-            if (isLoginMode) {
-                // Вход требует FormData для OAuth2
-                const formData = new FormData();
-                formData.append('username', email); // FastAPI OAuth2 ожидает username
-                formData.append('password', password);
+    // --- 2. AUTHENTICATION ---
+    
+    // Переключатель Вход / Регистрация
+    if (document.getElementById('auth-switch-text')) {
+        document.getElementById('auth-switch-text').addEventListener('click', (e) => {
+            if (e.target.id === 'switch-action') {
+                isLoginMode = !isLoginMode;
+                els.authError.classList.add('hidden');
                 
-                response = await fetch(endpoint, {
-                    method: 'POST',
-                    body: formData
-                });
-            } else {
-                // Регистрация требует JSON
-                response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
+                if (isLoginMode) {
+                    els.authTitle.textContent = "Вход";
+                    els.authBtn.textContent = "Войти";
+                    document.getElementById('auth-switch-text').innerHTML = 'Нет аккаунта? <span id="switch-action" style="color:#1ABC9C;cursor:pointer;font-weight:bold">Зарегистрироваться</span>';
+                    show(els.forgotLink);
+                } else {
+                    els.authTitle.textContent = "Регистрация";
+                    els.authBtn.textContent = "Создать аккаунт";
+                    document.getElementById('auth-switch-text').innerHTML = 'Есть аккаунт? <span id="switch-action" style="color:#1ABC9C;cursor:pointer;font-weight:bold">Войти</span>';
+                    hide(els.forgotLink);
+                }
             }
+        });
+    }
 
-            const data = await response.json();
+    // Логика кнопки "Войти"
+    if (els.authBtn) {
+        els.authBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = els.authEmail.value.trim();
+            const password = els.authPass.value.trim();
 
-            if (!response.ok) {
-                throw new Error(data.detail || "Ошибка сервера");
+            if (!email || !password) return showError("Заполните все поля");
+
+            els.authBtn.disabled = true;
+            els.authBtn.textContent = "Загрузка...";
+
+            try {
+                const endpoint = isLoginMode ? '/token' : '/register';
+                let response;
+
+                if (isLoginMode) {
+                    const formData = new FormData();
+                    formData.append('username', email);
+                    formData.append('password', password);
+                    response = await fetch(endpoint, { method: 'POST', body: formData });
+                } else {
+                    response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                }
+
+                const data = await response.json();
+                
+                if (!response.ok) throw new Error(data.detail || "Ошибка сервера");
+
+                if (isLoginMode) {
+                    // ЗАЩИТА: Проверяем, что токен реально пришел
+                    if (data.access_token) {
+                        console.log("Токен получен, сохраняем...");
+                        localStorage.setItem('access_token', data.access_token);
+                        initializeSession();
+                    } else {
+                        throw new Error("Сервер не прислал токен!");
+                    }
+                } else {
+                    alert("Аккаунт создан! Теперь войдите.");
+                    location.reload();
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError(err.message === "Unauthorized" ? "Неверный логин или пароль" : err.message);
+            } finally {
+                els.authBtn.disabled = false;
+                els.authBtn.textContent = isLoginMode ? "Войти" : "Создать аккаунт";
             }
-
-            if (isLoginMode) {
-                // Успешный вход
-                localStorage.setItem('access_token', data.access_token);
-                showApp();
-            } else {
-                // Успешная регистрация
-                alert("Аккаунт создан! Теперь войдите.");
-                // Переключаем на вход автоматически
-                switchAction.click(); 
-            }
-
-        } catch (err) {
-            showError(err.message === "Unauthorized" ? "Неверный логин или пароль" : err.message);
-        } finally {
-            authBtn.disabled = false;
-            authBtn.textContent = isLoginMode ? "Войти" : "Создать аккаунт";
-        }
-    });
+        });
+    }
 
     function showError(msg) {
-        authError.textContent = msg;
-        authError.classList.remove('hidden');
+        if(els.authError) {
+            els.authError.textContent = msg;
+            show(els.authError);
+        } else alert(msg);
     }
 
-    function showApp() {
-        authOverlay.classList.add('hidden');
-        logoutBtn.classList.remove('hidden');
-    }
-
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('access_token');
-        location.reload();
+    // --- 3. PASSWORD RESET ---
+    if(els.forgotLink) els.forgotLink.addEventListener('click', () => { hide(els.authForm); show(els.resetForm); els.authTitle.textContent = "Сброс"; });
+    if(els.backToLogin) els.backToLogin.addEventListener('click', () => { hide(els.resetForm); show(els.authForm); els.authTitle.textContent = "Вход"; });
+    
+    if(els.sendCodeBtn) els.sendCodeBtn.addEventListener('click', async () => {
+        const email = els.resetEmail.value;
+        if(!email) return alert("Введите email");
+        await fetch('/forgot-password', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+        alert("Код отправлен на почту (если она существует)");
+        hide(els.sendCodeBtn); show(els.codeSection);
     });
 
+    if(els.confirmResetBtn) els.confirmResetBtn.addEventListener('click', async () => {
+        const email = els.resetEmail.value;
+        const code = els.resetCode.value;
+        const new_password = els.newPass.value;
+        const res = await fetch('/reset-password', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, code, new_password}) });
+        if(res.ok) { alert("Пароль изменен! Войдите."); location.reload(); }
+        else { alert("Ошибка. Проверьте код."); }
+    });
 
-    // --- 2. ЧАТ И ЛОГИКА ---
+    // --- 4. PROFILE & LOGOUT ---
+    async function loadProfile() {
+        try {
+            const token = localStorage.getItem('access_token');
+            const res = await fetch('/users/me', { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            });
 
-    // Выбор модели
-    modelBtns.forEach(btn => {
+            if (res.status === 401) {
+                console.warn("Сессия истекла или токен сломан. Выход.");
+                logout(false); // false = не перезагружать, просто показать логин
+                return;
+            }
+
+            const user = await res.json();
+            if(els.pEmail) els.pEmail.textContent = user.email;
+            if(els.pId) els.pId.textContent = user.user_id || "---";
+            if(els.pStatus) {
+                els.pStatus.textContent = user.is_pro ? "PRO" : "FREE";
+                if(user.is_pro) els.pStatus.classList.add('pro');
+            }
+        } catch(e) { 
+            console.error("Ошибка профиля:", e); 
+        }
+    }
+
+    function logout(doReload = true) {
+        localStorage.removeItem('access_token');
+        if (doReload) {
+            location.reload();
+        } else {
+            // Мягкий выход без перезагрузки (чтобы не было цикла)
+            hide(els.profileModal);
+            hide(els.openProfileBtn);
+            show(els.authOverlay);
+        }
+    }
+
+    if(els.openProfileBtn) els.openProfileBtn.addEventListener('click', () => show(els.profileModal));
+    if(els.closeModal) els.closeModal.addEventListener('click', () => hide(els.profileModal));
+    if(els.logoutBtn) els.logoutBtn.addEventListener('click', () => logout(true));
+
+    // --- 5. CHAT ---
+    els.modelBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            modelBtns.forEach(b => b.classList.remove('active'));
+            els.modelBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentModel = btn.dataset.model;
         });
     });
 
-    // Обработка фото
-    attachBtn.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', (e) => {
+    if(els.attachBtn) els.attachBtn.addEventListener('click', () => els.fileInput.click());
+    if(els.fileInput) els.fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) {
+        if(file) {
             const reader = new FileReader();
-            reader.onload = function(event) {
-                currentImageBase64 = event.target.result;
-                imagePreview.src = currentImageBase64;
-                imagePreviewContainer.classList.remove('hidden');
-                
-                // Авто-переключение на режим "Око"
-                if (currentModel !== 'eye') {
-                    document.querySelector('[data-model="eye"]').click();
-                }
-                userInput.placeholder = "Добавь подпись к фото...";
-                userInput.focus();
+            reader.onload = (ev) => {
+                currentImageBase64 = ev.target.result;
+                els.previewImg.src = currentImageBase64;
+                show(els.previewCont);
+                if(currentModel !== 'eye') document.querySelector('[data-model="eye"]')?.click();
             };
             reader.readAsDataURL(file);
         }
     });
+    if(els.removeImg) els.removeImg.addEventListener('click', () => { currentImageBase64=null; els.fileInput.value=''; hide(els.previewCont); });
 
-    removeImageBtn.addEventListener('click', () => {
-        currentImageBase64 = null;
-        fileInput.value = '';
-        imagePreviewContainer.classList.add('hidden');
-        userInput.placeholder = "Задай вопрос...";
-    });
-
-    // Отправка сообщения
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
+    if(els.sendBtn) els.sendBtn.addEventListener('click', sendMessage);
+    if(els.input) els.input.addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage(); });
 
     async function sendMessage() {
-        const text = userInput.value.trim();
+        const text = els.input.value.trim();
+        if(!text && !currentImageBase64) return;
         
-        if (!text && !currentImageBase64) return;
+        if(els.welcome) els.welcome.classList.add('minimized');
+        show(els.chatBox);
 
-        // UI Updates
-        if (!welcomeScreen.classList.contains('minimized')) {
-            welcomeScreen.classList.add('minimized');
-            chatBox.classList.remove('hidden');
-        }
-
-        appendUserMessage(text, currentImageBase64);
+        appendMsg(text, 'user-msg', currentImageBase64);
         
-        // Prepare Payload
-        const payload = {
-            message: text,
-            model_type: currentModel,
-            image: currentImageBase64
-        };
-
-        // Reset Input UI
-        userInput.value = '';
-        currentImageBase64 = null;
-        fileInput.value = '';
-        imagePreviewContainer.classList.add('hidden');
-        userInput.placeholder = "Задай вопрос...";
-
-        showTypingIndicator();
-
-        // Network Request
-        const token = localStorage.getItem('access_token');
+        const payload = { message: text, model_type: currentModel, image: currentImageBase64 };
+        els.input.value = ''; currentImageBase64 = null; hide(els.previewCont); show(els.typing);
 
         try {
-            const response = await fetch('/api/chat', {
+            const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}` 
                 },
                 body: JSON.stringify(payload)
             });
 
-            if (response.status === 401) {
-                hideTypingIndicator();
-                localStorage.removeItem('access_token');
-                alert("Сессия истекла. Пожалуйста, войдите снова.");
-                location.reload();
-                return;
-            }
+            if (res.status === 401) { logout(false); return; }
 
-            const data = await response.json();
-            hideTypingIndicator();
+            const data = await res.json();
+            hide(els.typing);
+            
+            if(data.reply) appendAiMessage(data.reply);
+            else appendMsg("Ошибка: Пустой ответ от ИИ", 'ai-msg error');
 
-            if (data.reply) {
-                appendAiMessage(data.reply);
-            } else {
-                appendMessage("Не удалось получить ответ от ИИ.", 'ai-msg error');
-            }
-
-        } catch (error) {
-            console.error(error);
-            hideTypingIndicator();
-            appendMessage("Ошибка соединения с сервером.", 'ai-msg error');
+        } catch(e) { 
+            hide(els.typing); 
+            console.error(e);
+            appendMsg("Ошибка соединения", 'ai-msg error'); 
         }
     }
 
-    // --- HELPERS ---
-
-    function appendUserMessage(text, imageBase64) {
+    // --- RENDER FUNCTIONS ---
+    function appendMsg(text, cls, img64) {
         const div = document.createElement('div');
-        div.classList.add('message', 'user-msg');
-        
-        if (imageBase64) {
-            const img = document.createElement('img');
-            img.src = imageBase64;
-            img.classList.add('user-image');
-            div.appendChild(img);
-        }
-        
-        if (text) {
-            const p = document.createElement('div');
-            p.textContent = text;
-            div.appendChild(p);
-        }
-        
-        chatBox.appendChild(div);
-        scrollToBottom();
+        div.classList.add('message', cls.includes(' ') ? cls.split(' ')[0] : cls);
+        if(cls.includes('error')) div.classList.add('error');
+        if(img64) { const img = document.createElement('img'); img.src = img64; img.classList.add('user-image'); div.appendChild(img); }
+        if(text) { const p = document.createElement('div'); p.textContent = text; div.appendChild(p); }
+        els.chatBox.appendChild(div); els.chatBox.scrollTop = els.chatBox.scrollHeight;
     }
 
-    function appendAiMessage(markdownText) {
+    function appendAiMessage(text) {
         const div = document.createElement('div');
         div.classList.add('message', 'ai-msg');
-        // Используем marked для парсинга
-        div.innerHTML = marked.parse(markdownText);
-        chatBox.appendChild(div);
-        scrollToBottom();
-    }
 
-    function appendMessage(text, className) {
-        const div = document.createElement('div');
-        div.classList.add('message', className);
-        div.textContent = text;
-        chatBox.appendChild(div);
-        scrollToBottom();
-    }
+        // 1. Markdown
+        if (typeof marked !== 'undefined') div.innerHTML = marked.parse(text);
+        else div.textContent = text;
 
-    function showTypingIndicator() {
-        typingIndicator.classList.remove('hidden');
-        chatBox.appendChild(typingIndicator);
-        scrollToBottom();
-    }
+        // 2. Math (KaTeX)
+        if (typeof renderMathInElement !== 'undefined') {
+            renderMathInElement(div, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }
 
-    function hideTypingIndicator() {
-        typingIndicator.classList.add('hidden');
-    }
+        // 3. Code (Highlight.js)
+        if (typeof hljs !== 'undefined') {
+            div.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+        }
 
-    function scrollToBottom() {
-        chatBox.scrollTop = chatBox.scrollHeight;
+        els.chatBox.appendChild(div);
+        els.chatBox.scrollTop = els.chatBox.scrollHeight;
     }
 });
