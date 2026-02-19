@@ -2,6 +2,7 @@ import os
 import random
 import string
 import httpx
+import json
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -18,13 +19,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr
 from dotenv import load_dotenv
 
 # Auth & DB
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from sqlalchemy import create_engine, Column, Integer, String, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, Text, ForeignKey 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -69,7 +71,6 @@ def generate_short_id():
     return ''.join(random.choices(string.digits, k=6))
 
 class User(Base):
-    # Используем чистое имя таблицы, чтобы не было конфликтов
     __tablename__ = "users_final"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -80,7 +81,19 @@ class User(Base):
     user_id = Column(String, unique=True, default=generate_short_id)
     is_pro = Column(Boolean, default=False)
     reset_code = Column(String, nullable=True)
-    # СВЯЗЬ С СООБЩЕНИЯМИ УБРАНА - ПАМЯТИ НЕТ
+    streak_days = Column(Integer, default=0) # <-- ДОБАВЛЕНО: Счетчик дней (Огонек)
+    
+    # Настройки пользователя
+    user_preferences = Column(String, default='{"ui_lang":"ru","edu_level":"student","explain_style":"detailed"}')
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users_final.id"))
+    session_id = Column(String, index=True)
+    role = Column(String)
+    content = Column(Text)
+    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
 
 Base.metadata.create_all(bind=engine)
 
@@ -88,11 +101,13 @@ Base.metadata.create_all(bind=engine)
 class CreateUser(BaseModel):
     email: EmailStr
     password: str
+    preferences: dict = {} # <-- ДОБАВЛЕНО: Принимаем предпочтения при регистрации
 
 class ChatRequest(BaseModel):
     message: str
     model_type: str = "chat"
     image: Optional[str] = None
+    session_id: str = "default_session"
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
@@ -120,7 +135,6 @@ def get_password_hash(password): return pwd_context.hash(password)
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    # FIX ВРЕМЕНИ: Отнимаем 1 минуту, чтобы токен был валиден сразу
     now = datetime.utcnow() - timedelta(minutes=1)
     expire = now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"iat": now, "exp": expire})
@@ -133,31 +147,22 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ---
-        # Мы отключаем проверку 'iat' (время создания), так как она вызывает вечный цикл
-        # если часы сервера и токена не совпадают идеально.
         payload = jwt.decode(
             token, 
             SECRET_KEY, 
             algorithms=[ALGORITHM], 
-            options={"verify_iat": False}  # <--- ВОТ ЭТО ЛЕЧИТ ЦИКЛ
+            options={"verify_iat": False}
         )
-        
         email: str = payload.get("sub")
         if email is None:
-            print("❌ Ошибка Auth: В токене нет email")
             raise credentials_exception
-            
     except JWTError as e:
-        # Теперь мы увидим реальную причину в консоли, если это не сработает
         print(f"❌ Ошибка декодирования токена: {str(e)}")
         raise credentials_exception
     
     user = db.query(User).filter(User.email == email).first()
     if user is None:
-        print(f"❌ Ошибка Auth: Пользователь {email} не найден в базе")
         raise credentials_exception
-        
     return user
 
 # --- APP SETUP ---
@@ -170,7 +175,7 @@ CURRENT_MODEL = "google/gemini-2.0-pro-exp-02-05:free"
 
 MODELS_CONFIG = {
     "chat": {
-        "model": "stepfun/step-3.5-flash:free",
+        "model": "arcee-ai/trinity-mini:free",
         "system": "Ты — дружелюбный ассистент Studify. Спроси чего хочет пользователь. Отвечай понятно."
     },
     "planner": {
@@ -178,8 +183,8 @@ MODELS_CONFIG = {
         "system": "Ты — планировщик задач. Помогай структурировать день, разбивать задачи и расставлять приоритеты."
     },
     "coding": {
-        "model": "qwen/qwen3-next-80b-a3b-instruct:free",
-        "system": "Ты — Senior Developer. Пиши чистый код, объясняй сложные моменты. Код оборачивай в блоки Markdown ```language ... ```."
+        "model": "deepseek/deepseek-r1-0528:free",
+        "system": "Ты — Senior Developer. Пиши чистый код на стандарте PEP8, объясняй сложные моменты. Код оборачивай в блоки Markdown ```language ... ```."
     },
     "notes": {
         "model": "qwen/qwen3-vl-30b-a3b-thinking",
@@ -190,7 +195,7 @@ MODELS_CONFIG = {
         "system": "Ты — исследователь. Давай полные и фактологические ответы."
     },
     "eye": {
-        "model": "qwen/qwen3-vl-30b-a3b-thinking",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking",
         "system": "Ты — 'Око Studify'. Ты видишь изображения. Решай задачи (LaTeX $$...$$), переводи текст."
     }
 }
@@ -205,9 +210,19 @@ async def read_root(request: Request):
 def register(user: CreateUser, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email занят")
-    new_user = User(email=user.email, hashed_password=get_password_hash(user.password))
+        
+    # Превращаем предпочтения в строку JSON
+    prefs_json = json.dumps(user.preferences, ensure_ascii=False) if user.preferences else '{"ui_lang":"ru","edu_level":"student","explain_style":"detailed"}'
+    
+    new_user = User(
+        email=user.email, 
+        hashed_password=get_password_hash(user.password),
+        user_preferences=prefs_json
+    )
+    
     while db.query(User).filter(User.user_id == new_user.user_id).first():
         new_user.user_id = generate_short_id()
+        
     db.add(new_user)
     db.commit()
     return {"msg": "Пользователь создан"}
@@ -222,7 +237,13 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @app.get("/users/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    return {"email": current_user.email, "user_id": current_user.user_id, "is_pro": current_user.is_pro}
+    # <-- ОБНОВЛЕНО: Возвращаем streak_days
+    return {
+        "email": current_user.email, 
+        "user_id": current_user.user_id, 
+        "is_pro": current_user.is_pro,
+        "streak_days": current_user.streak_days 
+    }
 
 @app.post("/forgot-password")
 async def forgot_password(request: PasswordResetRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -246,26 +267,67 @@ def reset_password(request: PasswordResetConfirm, db: Session = Depends(get_db))
     return {"msg": "Updated"}
 
 @app.post("/api/chat")
-async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(get_current_user)):
-    # ВНИМАНИЕ: Память убрана. Мы просто берем сообщение и режим.
-    if not API_KEY: return JSONResponse(status_code=500, content={"error": "API Key missing"})
+async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not API_KEY: 
+        return JSONResponse(status_code=500, content={"error": "API Key missing"})
     
     mode = chat_request.model_type
-    config = MODELS_CONFIG.get(mode, MODELS_CONFIG["chat"])
-    if chat_request.image and mode != "eye": config = MODELS_CONFIG["eye"]
+    config = MODELS_CONFIG.get(mode, MODELS_CONFIG["chat"]).copy()
+    if chat_request.image and mode != "eye": 
+        config = MODELS_CONFIG["eye"].copy()
 
-    # Формируем контекст БЕЗ истории
-    messages_payload = [{"role": "system", "content": config["system"]}]
+    # Применяем предпочтения пользователя
+    prefs = json.loads(current_user.user_preferences or "{}")
+    system_prompt = config["system"]
     
-    user_content = [{"type": "text", "text": chat_request.message or "..."}]
-    if chat_request.image:
-        user_content.append({"type": "image_url", "image_url": {"url": chat_request.image}})
-    
-    if not chat_request.image:
-        messages_payload.append({"role": "user", "content": chat_request.message})
-    else:
-        messages_payload.append({"role": "user", "content": user_content})
+    if mode in ["chat", "coding", "eye"]:
+        level = "Школьник" if prefs.get("edu_level") == "school" else "Студент"
+        style_map = {"brief": "Кратко", "detailed": "Подробно", "teacher": "Как преподаватель"}
+        style = style_map.get(prefs.get("explain_style"), "Подробно")
+        system_prompt += f" (Учитывай контекст: Уровень пользователя - {level}, Требуемый стиль объяснения - {style})."
 
+    # --- 1. СНАЧАЛА СОХРАНЯЕМ НОВОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
+    new_user_msg = ChatMessage(user_id=current_user.id, session_id=chat_request.session_id, role="user", content=chat_request.message)
+    db.add(new_user_msg)
+    db.commit()
+
+    # --- 2. УМНАЯ ОЧИСТКА ПАМЯТИ (Автоматическое скользящее окно) ---
+    # Оставляем последние 5 сообщений (2 прошлых пары вопрос-ответ + 1 новый вопрос)
+    recent_messages = db.query(ChatMessage).filter(
+        ChatMessage.user_id == current_user.id,
+        ChatMessage.session_id == chat_request.session_id
+    ).order_by(ChatMessage.id.desc()).limit(5).all()
+    
+    keep_ids = [msg.id for msg in recent_messages]
+
+    # Безопасно удаляем из базы всё, что старше этих 5 сообщений
+    if keep_ids:
+        db.query(ChatMessage).filter(
+            ChatMessage.user_id == current_user.id,
+            ChatMessage.session_id == chat_request.session_id,
+            ChatMessage.id.notin_(keep_ids)
+        ).delete(synchronize_session=False)
+        db.commit()
+
+    # --- 3. ФОРМИРУЕМ ПРАВИЛЬНУЮ ИСТОРИЮ ДЛЯ ИИ ---
+    # Загружаем сохраненные сообщения в хронологическом (прямом) порядке
+    history = db.query(ChatMessage).filter(
+        ChatMessage.user_id == current_user.id, 
+        ChatMessage.session_id == chat_request.session_id
+    ).order_by(ChatMessage.id.asc()).all()
+
+    messages_payload = [{"role": "system", "content": system_prompt}]
+
+    for msg in history:
+        # Обработка картинки (прикрепляем только к последнему сообщению пользователя)
+        if chat_request.image and msg.id == new_user_msg.id:
+            user_content = [{"type": "text", "text": msg.content or "..."}]
+            user_content.append({"type": "image_url", "image_url": {"url": chat_request.image}})
+            messages_payload.append({"role": "user", "content": user_content})
+        else:
+            messages_payload.append({"role": msg.role, "content": msg.content})
+
+    # --- 4. ОТПРАВКА И СТРИМИНГ ---
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",
@@ -275,25 +337,49 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
     
     payload = {
         "model": config["model"],
-        "messages": messages_payload
+        "messages": messages_payload,
+        "stream": True 
     }
 
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(OPENROUTER_URL, json=payload, headers=headers, timeout=60.0)
-            if response.status_code != 200:
-                print(f"AI Error: {response.text}")
-                return JSONResponse(status_code=500, content={"error": "Ошибка провайдера ИИ"})
-            
-            data = response.json()
-            if "choices" in data:
-                return {"reply": data["choices"][0]["message"]["content"]}
-            else:
-                return JSONResponse(status_code=500, content={"error": "Пустой ответ"})
-        except Exception as e:
-            print(f"Error: {e}")
-            return JSONResponse(status_code=500, content={"error": str(e)})
+    async def event_generator():
+        full_reply = ""
+        async with httpx.AsyncClient() as client:
+            try:
+                async with client.stream("POST", OPENROUTER_URL, json=payload, headers=headers, timeout=60.0) as response:
+                    if response.status_code != 200:
+                        # Логируем точную ошибку API для дебага в терминале
+                        error_text = await response.aread()
+                        print(f"ОШИБКА ПРОВАЙДЕРА ИИ: {error_text.decode('utf-8')}")
+                        yield f"data: {json.dumps({'error': 'Ошибка API: ' + str(response.status_code)})}\n\n"
+                        return
 
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                data_json = json.loads(data_str)
+                                if "choices" in data_json:
+                                    delta = data_json["choices"][0].get("delta", {})
+                                    content = delta.get("content", "")
+                                    if content:
+                                        full_reply += content
+                                        yield f"data: {json.dumps({'text': content})}\n\n"
+                            except json.JSONDecodeError:
+                                pass
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        
+        # После завершения стриминга сохраняем финальный ответ ИИ в базу
+        if full_reply:
+            new_ai_msg = ChatMessage(user_id=current_user.id, session_id=chat_request.session_id, role="assistant", content=full_reply)
+            db.add(new_ai_msg)
+            db.commit()
+            
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
