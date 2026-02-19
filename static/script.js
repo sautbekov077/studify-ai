@@ -1,328 +1,351 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🚀 Studify System v3.0 Loaded");
-
-    // --- HELPERS ---
-    function get(id) { return document.getElementById(id); }
-    function hide(el) { if(el) el.classList.add('hidden'); }
-    function show(el) { if(el) el.classList.remove('hidden'); }
-
-    // --- ELEMENTS ---
+    // --- 1. ЭЛЕМЕНТЫ ДОМ ---
     const els = {
-        authOverlay: get('auth-overlay'),
-        authForm: get('auth-form'),
-        authEmail: get('auth-email'),
-        authPass: get('auth-password'),
-        authBtn: get('auth-btn'),
-        authSwitch: get('switch-action'),
-        authTitle: get('auth-title'),
-        authError: get('auth-error'),
+        overlay: document.getElementById('auth-overlay'),
+        email: document.getElementById('auth-email'),
+        pass: document.getElementById('auth-password'),
+        confPass: document.getElementById('auth-confirm-password'),
+        step1: document.getElementById('auth-step-1'),
+        step2: document.getElementById('auth-step-2'),
+        authBtn: document.getElementById('auth-btn'),
+        finishBtn: document.getElementById('auth-finish-btn'),
+        switchText: document.getElementById('auth-switch-text'),
+        backToStep1: document.getElementById('back-to-step-1'),
+        error: document.getElementById('auth-error'),
+        title: document.getElementById('auth-title'),
+        footer: document.getElementById('auth-footer-container'),
         
-        forgotLink: get('forgot-pass-link'),
-        resetForm: get('reset-form'),
-        resetEmail: get('reset-email'),
-        sendCodeBtn: get('send-code-btn'),
-        codeSection: get('code-section'),
-        resetCode: get('reset-code'),
-        newPass: get('new-password'),
-        confirmResetBtn: get('confirm-reset-btn'),
-        backToLogin: get('back-to-login'),
+        chatBox: document.getElementById('chat-box'),
+        input: document.getElementById('user-input'),
+        sendBtn: document.getElementById('send-btn'),
+        modelsBtns: document.querySelectorAll('.model-btn'),
+        welcomeScreen: document.getElementById('welcome-screen'),
         
-        openProfileBtn: get('open-profile-btn'),
-        profileModal: get('profile-modal'),
-        closeModal: document.querySelector('.close-modal'),
-        logoutBtn: get('logout-btn-modal'),
-        pEmail: get('profile-email'),
-        pId: get('profile-id'),
-        pStatus: get('profile-status'),
+        // Элементы загрузки фото
+        fileInput: document.getElementById('file-input'),
+        attachBtn: document.getElementById('attach-btn'),
+        imageContainer: document.getElementById('image-preview-container'),
+        imagePreview: document.getElementById('image-preview'),
+        removeImageBtn: document.getElementById('remove-image'),
+
+        sidebar: document.getElementById('sidebar'),
+        sidebarOverlay: document.getElementById('sidebar-overlay'),
+        burgerBtn: document.getElementById('burger-btn'),
+        closeSidebar: document.getElementById('close-sidebar'),
+        newChatBtn: document.getElementById('new-chat-btn'),
+        streakDays: document.getElementById('streak-days'),
+        sidebarStatus: document.getElementById('sidebar-status'), // Статус в сайдбаре
         
-        chatBox: get('chat-box'),
-        welcome: get('welcome-screen'),
-        typing: get('typing-indicator'),
-        input: get('user-input'),
-        sendBtn: get('send-btn'),
-        attachBtn: get('attach-btn'),
-        fileInput: get('file-input'),
-        previewCont: get('image-preview-container'),
-        previewImg: get('image-preview'),
-        removeImg: get('remove-image'),
-        modelBtns: document.querySelectorAll('.model-btn')
+        langToggleBtn: document.getElementById('lang-toggle-btn'),
+        langDropdown: document.getElementById('lang-dropdown'),
+        langOptions: document.querySelectorAll('.lang-option'),
+        
+        openProfileBtn: document.getElementById('open-profile-btn'),
+        profileModal: document.getElementById('profile-modal'),
+        closeModal: document.getElementById('close-modal'),
+        logout: document.getElementById('logout-btn-modal'),
+        profileEmail: document.getElementById('profile-email'),
+        profileId: document.getElementById('profile-id')
     };
 
-    let isLoginMode = true;
+    let isLogin = true;
     let currentModel = 'chat';
-    let currentImageBase64 = null;
+    let sessionId = Date.now().toString();
+    let currentImageBase64 = null; // Переменная для хранения фото
 
-    // --- 1. INIT & SESSION CHECK ---
-    const token = localStorage.getItem('access_token');
-    
-    // Проверка на "битый" токен при старте
-    if (token && token !== "undefined" && token !== "null") {
-        initializeSession();
-    } else {
-        // Если токен мусорный — чистим его
-        localStorage.removeItem('access_token');
-        show(els.authOverlay);
+    // --- 2. ИНИЦИАЛИЗАЦИЯ ---
+    function initApp() {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            els.overlay.classList.add('hidden');
+            loadProfile(); 
+        } else {
+            els.overlay.classList.remove('hidden'); 
+        }
     }
+    initApp();
 
-    function initializeSession() {
-        hide(els.authOverlay);
-        show(els.openProfileBtn);
-        loadProfile(); // Загружаем данные
-    }
-
-    // --- 2. AUTHENTICATION ---
-    
-    // Переключатель Вход / Регистрация
-    if (document.getElementById('auth-switch-text')) {
-        document.getElementById('auth-switch-text').addEventListener('click', (e) => {
-            if (e.target.id === 'switch-action') {
-                isLoginMode = !isLoginMode;
-                els.authError.classList.add('hidden');
-                
-                if (isLoginMode) {
-                    els.authTitle.textContent = "Вход";
-                    els.authBtn.textContent = "Войти";
-                    document.getElementById('auth-switch-text').innerHTML = 'Нет аккаунта? <span id="switch-action" style="color:#1ABC9C;cursor:pointer;font-weight:bold">Зарегистрироваться</span>';
-                    show(els.forgotLink);
-                } else {
-                    els.authTitle.textContent = "Регистрация";
-                    els.authBtn.textContent = "Создать аккаунт";
-                    document.getElementById('auth-switch-text').innerHTML = 'Есть аккаунт? <span id="switch-action" style="color:#1ABC9C;cursor:pointer;font-weight:bold">Войти</span>';
-                    hide(els.forgotLink);
-                }
+    // --- 3. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
+    els.switchText.addEventListener('click', (e) => {
+        if (e.target.id === 'switch-action') {
+            isLogin = !isLogin;
+            els.error.classList.add('hidden');
+            els.step1.classList.remove('hidden'); 
+            els.step2.classList.add('hidden');
+            
+            if (isLogin) {
+                els.title.textContent = "Вход";
+                els.confPass.classList.add('hidden');
+                els.authBtn.textContent = "Войти";
+                els.switchText.innerHTML = 'Нет аккаунта? <span id="switch-action">Зарегистрироваться</span>';
+            } else {
+                els.title.textContent = "Регистрация (Шаг 1)";
+                els.confPass.classList.remove('hidden');
+                els.authBtn.textContent = "Далее";
+                els.switchText.innerHTML = 'Есть аккаунт? <span id="switch-action">Войти</span>';
             }
-        });
-    }
+        }
+    });
 
-    // Логика кнопки "Войти"
-    if (els.authBtn) {
-        els.authBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const email = els.authEmail.value.trim();
-            const password = els.authPass.value.trim();
+    els.authBtn.addEventListener('click', async () => {
+        const email = els.email.value.trim();
+        const pass = els.pass.value;
+        if (!email || !pass) return showError("Заполните поля");
 
-            if (!email || !password) return showError("Заполните все поля");
-
-            els.authBtn.disabled = true;
-            els.authBtn.textContent = "Загрузка...";
-
+        if (isLogin) {
+            const fd = new FormData(); fd.append('username', email); fd.append('password', pass);
             try {
-                const endpoint = isLoginMode ? '/token' : '/register';
-                let response;
-
-                if (isLoginMode) {
-                    const formData = new FormData();
-                    formData.append('username', email);
-                    formData.append('password', password);
-                    response = await fetch(endpoint, { method: 'POST', body: formData });
+                const res = await fetch('/token', { method: 'POST', body: fd });
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    els.overlay.classList.add('hidden');
+                    loadProfile();
                 } else {
-                    response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password })
-                    });
+                    showError("Неверный логин или пароль");
                 }
+            } catch(e) { showError("Ошибка сервера"); }
+        } else {
+            if (pass !== els.confPass.value) return showError("Пароли не совпадают!");
+            if (pass.length < 6) return showError("Пароль должен быть длиннее 5 символов!");
+            
+            els.error.classList.add('hidden');
+            els.step1.classList.add('hidden');
+            els.step2.classList.remove('hidden');
+            els.title.textContent = "Настройки ИИ (Шаг 2)";
+            els.footer.classList.add('hidden'); 
+        }
+    });
 
-                const data = await response.json();
-                
-                if (!response.ok) throw new Error(data.detail || "Ошибка сервера");
+    els.backToStep1.addEventListener('click', () => {
+        els.step2.classList.add('hidden');
+        els.step1.classList.remove('hidden');
+        els.title.textContent = "Регистрация (Шаг 1)";
+        els.footer.classList.remove('hidden');
+    });
 
-                if (isLoginMode) {
-                    // ЗАЩИТА: Проверяем, что токен реально пришел
-                    if (data.access_token) {
-                        console.log("Токен получен, сохраняем...");
-                        localStorage.setItem('access_token', data.access_token);
-                        initializeSession();
-                    } else {
-                        throw new Error("Сервер не прислал токен!");
-                    }
-                } else {
-                    alert("Аккаунт создан! Теперь войдите.");
-                    location.reload();
-                }
+    els.finishBtn.addEventListener('click', async () => {
+        const lang = document.getElementById('pref-lang').value;
+        const edu = document.getElementById('pref-edu').value;
+        const style = document.getElementById('pref-style').value;
+        
+        if (!lang || !edu || !style) return showError("Заполните все настройки!");
 
-            } catch (err) {
-                console.error(err);
-                showError(err.message === "Unauthorized" ? "Неверный логин или пароль" : err.message);
-            } finally {
-                els.authBtn.disabled = false;
-                els.authBtn.textContent = isLoginMode ? "Войти" : "Создать аккаунт";
+        const payload = {
+            email: els.email.value.trim(),
+            password: els.pass.value,
+            preferences: { ui_lang: lang, edu_level: edu, explain_style: style }
+        };
+
+        try {
+            const res = await fetch('/register', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) { 
+                alert("Аккаунт создан! Теперь войдите."); location.reload(); 
+            } else {
+                const data = await res.json(); showError(data.detail || "Ошибка регистрации");
             }
-        });
-    }
-
-    function showError(msg) {
-        if(els.authError) {
-            els.authError.textContent = msg;
-            show(els.authError);
-        } else alert(msg);
-    }
-
-    // --- 3. PASSWORD RESET ---
-    if(els.forgotLink) els.forgotLink.addEventListener('click', () => { hide(els.authForm); show(els.resetForm); els.authTitle.textContent = "Сброс"; });
-    if(els.backToLogin) els.backToLogin.addEventListener('click', () => { hide(els.resetForm); show(els.authForm); els.authTitle.textContent = "Вход"; });
-    
-    if(els.sendCodeBtn) els.sendCodeBtn.addEventListener('click', async () => {
-        const email = els.resetEmail.value;
-        if(!email) return alert("Введите email");
-        await fetch('/forgot-password', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email}) });
-        alert("Код отправлен на почту (если она существует)");
-        hide(els.sendCodeBtn); show(els.codeSection);
+        } catch(e) { showError("Ошибка соединения"); }
     });
 
-    if(els.confirmResetBtn) els.confirmResetBtn.addEventListener('click', async () => {
-        const email = els.resetEmail.value;
-        const code = els.resetCode.value;
-        const new_password = els.newPass.value;
-        const res = await fetch('/reset-password', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, code, new_password}) });
-        if(res.ok) { alert("Пароль изменен! Войдите."); location.reload(); }
-        else { alert("Ошибка. Проверьте код."); }
-    });
+    function showError(m) { els.error.textContent = m; els.error.classList.remove('hidden'); }
 
-    // --- 4. PROFILE & LOGOUT ---
+    // --- 4. ПРОФИЛЬ И СТАТУС ---
     async function loadProfile() {
         try {
-            const token = localStorage.getItem('access_token');
             const res = await fetch('/users/me', { 
-                headers: { 'Authorization': `Bearer ${token}` } 
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('access_token') }
             });
-
-            if (res.status === 401) {
-                console.warn("Сессия истекла или токен сломан. Выход.");
-                logout(false); // false = не перезагружать, просто показать логин
-                return;
+            if (res.ok) {
+                const data = await res.json();
+                els.profileEmail.textContent = data.email;
+                els.profileId.textContent = data.user_id;
+                if(data.streak_days !== undefined) els.streakDays.textContent = data.streak_days;
+                
+                // Установка бейджа FREE / PRO в сайдбар
+                if(data.is_pro) {
+                    els.sidebarStatus.textContent = "PRO";
+                    els.sidebarStatus.classList.add('pro');
+                } else {
+                    els.sidebarStatus.textContent = "FREE";
+                    els.sidebarStatus.classList.remove('pro');
+                }
+            } else if (res.status === 401) {
+                localStorage.removeItem('access_token');
+                els.overlay.classList.remove('hidden');
             }
-
-            const user = await res.json();
-            if(els.pEmail) els.pEmail.textContent = user.email;
-            if(els.pId) els.pId.textContent = user.user_id || "---";
-            if(els.pStatus) {
-                els.pStatus.textContent = user.is_pro ? "PRO" : "FREE";
-                if(user.is_pro) els.pStatus.classList.add('pro');
-            }
-        } catch(e) { 
-            console.error("Ошибка профиля:", e); 
-        }
+        } catch(e) { console.error("Ошибка загрузки профиля", e); }
     }
 
-    function logout(doReload = true) {
-        localStorage.removeItem('access_token');
-        if (doReload) {
-            location.reload();
-        } else {
-            // Мягкий выход без перезагрузки (чтобы не было цикла)
-            hide(els.profileModal);
-            hide(els.openProfileBtn);
-            show(els.authOverlay);
-        }
+    els.openProfileBtn.addEventListener('click', () => {
+        els.profileModal.classList.remove('hidden');
+        if(window.innerWidth <= 768) toggleSidebar();
+    });
+    els.closeModal.addEventListener('click', () => els.profileModal.classList.add('hidden'));
+    els.logout.addEventListener('click', () => { localStorage.removeItem('access_token'); location.reload(); });
+
+    // --- 5. UI: САЙДБАР, ФОТО И МЕНЮ ---
+    function toggleSidebar() {
+        els.sidebar.classList.toggle('open');
+        if (window.innerWidth <= 768) els.sidebarOverlay.classList.toggle('hidden');
     }
+    els.burgerBtn.addEventListener('click', toggleSidebar);
+    els.closeSidebar.addEventListener('click', toggleSidebar);
+    els.sidebarOverlay.addEventListener('click', toggleSidebar);
 
-    if(els.openProfileBtn) els.openProfileBtn.addEventListener('click', () => show(els.profileModal));
-    if(els.closeModal) els.closeModal.addEventListener('click', () => hide(els.profileModal));
-    if(els.logoutBtn) els.logoutBtn.addEventListener('click', () => logout(true));
-
-    // --- 5. CHAT ---
-    els.modelBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            els.modelBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentModel = btn.dataset.model;
+    els.langToggleBtn.addEventListener('click', () => els.langDropdown.classList.toggle('hidden'));
+    els.langOptions.forEach(opt => {
+        opt.addEventListener('click', (e) => {
+            els.langToggleBtn.innerHTML = `<span>🌐</span> Язык (${e.target.dataset.lang.toUpperCase()})`;
+            els.langDropdown.classList.add('hidden');
         });
     });
 
-    if(els.attachBtn) els.attachBtn.addEventListener('click', () => els.fileInput.click());
-    if(els.fileInput) els.fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if(file) {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                currentImageBase64 = ev.target.result;
-                els.previewImg.src = currentImageBase64;
-                show(els.previewCont);
-                if(currentModel !== 'eye') document.querySelector('[data-model="eye"]')?.click();
-            };
-            reader.readAsDataURL(file);
-        }
+    els.newChatBtn.addEventListener('click', () => {
+        els.chatBox.innerHTML = ''; 
+        els.welcomeScreen.classList.remove('minimized');
+        els.chatBox.classList.add('hidden');
+        sessionId = Date.now().toString(); 
+        if(window.innerWidth <= 768) toggleSidebar(); 
     });
-    if(els.removeImg) els.removeImg.addEventListener('click', () => { currentImageBase64=null; els.fileInput.value=''; hide(els.previewCont); });
 
-    if(els.sendBtn) els.sendBtn.addEventListener('click', sendMessage);
-    if(els.input) els.input.addEventListener('keypress', (e) => { if(e.key==='Enter') sendMessage(); });
+    els.modelsBtns.forEach(btn => btn.addEventListener('click', (e) => {
+        els.modelsBtns.forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        currentModel = e.currentTarget.dataset.model;
+    }));
+
+    // Логика добавления картинки (конвертация в Base64)
+    els.attachBtn.addEventListener('click', () => els.fileInput.click());
+    els.fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentImageBase64 = event.target.result;
+            els.imagePreview.src = currentImageBase64;
+            els.imageContainer.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    els.removeImageBtn.addEventListener('click', () => {
+        currentImageBase64 = null;
+        els.imagePreview.src = "";
+        els.fileInput.value = "";
+        els.imageContainer.classList.add('hidden');
+    });
+
+    // --- 6. ЧАТ И СТРИМИНГ ---
+    function appendMsg(role, content) {
+        const div = document.createElement('div');
+        div.className = `message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
+        div.textContent = content;
+        els.chatBox.appendChild(div);
+        els.chatBox.scrollTop = els.chatBox.scrollHeight;
+        return div;
+    }
+
+    function formatAIResponse(text, element) {
+        let mathBlocks = [];
+        let processedText = text.replace(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, (match) => {
+            mathBlocks.push(match); return `%%%MATH_BLOCK_${mathBlocks.length - 1}%%%`;
+        });
+
+        if (typeof marked !== 'undefined') {
+            element.innerHTML = marked.parse(processedText);
+        } else {
+            element.textContent = processedText;
+        }
+
+        element.innerHTML = element.innerHTML.replace(/%%%MATH_BLOCK_(\d+)%%%/g, (match, p1) => mathBlocks[p1]);
+
+        if (typeof renderMathInElement !== 'undefined') {
+            renderMathInElement(element, {
+                delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false} ],
+                throwOnError: false
+            });
+        }
+        if (typeof hljs !== 'undefined') {
+            element.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+        }
+    }
 
     async function sendMessage() {
         const text = els.input.value.trim();
-        if(!text && !currentImageBase64) return;
+        // Разрешаем отправку, если есть текст ИЛИ картинка
+        if (!text && !currentImageBase64) return;
         
-        if(els.welcome) els.welcome.classList.add('minimized');
-        show(els.chatBox);
+        els.welcomeScreen.classList.add('minimized');
+        els.chatBox.classList.remove('hidden');
 
-        appendMsg(text, 'user-msg', currentImageBase64);
+        // Показываем сообщение пользователя в чате (если есть картинка - пишем об этом)
+        let displayMsg = text;
+        if (currentImageBase64) {
+            displayMsg = text ? `📎 [Фото] ${text}` : `📎 [Фото отправлено]`;
+        }
+        appendMsg('user', displayMsg);
         
-        const payload = { message: text, model_type: currentModel, image: currentImageBase64 };
-        els.input.value = ''; currentImageBase64 = null; hide(els.previewCont); show(els.typing);
+        els.input.value = '';
+
+        // Формируем полезную нагрузку для сервера
+        const payload = { 
+            message: text, 
+            model_type: currentModel, 
+            session_id: sessionId 
+        };
+        if (currentImageBase64) {
+            payload.image = currentImageBase64; // Отправляем картинку
+        }
+
+        // Очищаем форму фото после отправки
+        els.removeImageBtn.click();
+
+        const aiDiv = appendMsg('assistant', 'Думаю...');
+        let fullAiText = "";
 
         try {
             const res = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${localStorage.getItem('access_token')}` 
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('access_token')
                 },
                 body: JSON.stringify(payload)
             });
 
-            if (res.status === 401) { logout(false); return; }
+            if (!res.ok) {
+                if(res.status === 401) { localStorage.removeItem('access_token'); location.reload(); return; }
+                aiDiv.textContent = "Ошибка сервера."; return;
+            }
 
-            const data = await res.json();
-            hide(els.typing);
-            
-            if(data.reply) appendAiMessage(data.reply);
-            else appendMsg("Ошибка: Пустой ответ от ИИ", 'ai-msg error');
+            aiDiv.textContent = ""; 
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder('utf-8');
 
-        } catch(e) { 
-            hide(els.typing); 
-            console.error(e);
-            appendMsg("Ошибка соединения", 'ai-msg error'); 
-        }
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                
+                for (let line of lines) {
+                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                        try {
+                            const data = JSON.parse(line.replace('data: ', ''));
+                            if (data.text) fullAiText += data.text; 
+                            formatAIResponse(fullAiText, aiDiv);
+                            els.chatBox.scrollTop = els.chatBox.scrollHeight;
+                        } catch(e) {}
+                    }
+                }
+            }
+        } catch(e) { aiDiv.textContent = "Ошибка соединения."; }
     }
 
-    // --- RENDER FUNCTIONS ---
-    function appendMsg(text, cls, img64) {
-        const div = document.createElement('div');
-        div.classList.add('message', cls.includes(' ') ? cls.split(' ')[0] : cls);
-        if(cls.includes('error')) div.classList.add('error');
-        if(img64) { const img = document.createElement('img'); img.src = img64; img.classList.add('user-image'); div.appendChild(img); }
-        if(text) { const p = document.createElement('div'); p.textContent = text; div.appendChild(p); }
-        els.chatBox.appendChild(div); els.chatBox.scrollTop = els.chatBox.scrollHeight;
-    }
-
-    function appendAiMessage(text) {
-        const div = document.createElement('div');
-        div.classList.add('message', 'ai-msg');
-
-        // 1. Markdown
-        if (typeof marked !== 'undefined') div.innerHTML = marked.parse(text);
-        else div.textContent = text;
-
-        // 2. Math (KaTeX)
-        if (typeof renderMathInElement !== 'undefined') {
-            renderMathInElement(div, {
-                delimiters: [
-                    {left: '$$', right: '$$', display: true},
-                    {left: '$', right: '$', display: false},
-                    {left: '\\(', right: '\\)', display: false},
-                    {left: '\\[', right: '\\]', display: true}
-                ],
-                throwOnError: false
-            });
-        }
-
-        // 3. Code (Highlight.js)
-        if (typeof hljs !== 'undefined') {
-            div.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
-        }
-
-        els.chatBox.appendChild(div);
-        els.chatBox.scrollTop = els.chatBox.scrollHeight;
-    }
+    els.sendBtn.addEventListener('click', sendMessage);
+    els.input.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
 });
