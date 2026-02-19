@@ -7,11 +7,9 @@
     <link rel="icon" type="image/png" href="/static/favicon.png"> 
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
@@ -24,94 +22,156 @@
             <div class="auth-logo"><img src="/static/logo.png" alt="Logo"></div>
             <h2 id="auth-title">Вход</h2>
             <form id="auth-form" onsubmit="return false;">
-                <input type="email" id="auth-email" placeholder="Email" required autocomplete="email">
-                <input type="password" id="auth-password" placeholder="Пароль" required autocomplete="current-password">
-                <div id="forgot-pass-link" class="forgot-link">Забыли пароль?</div>
-                <button type="submit" id="auth-btn" class="primary-btn">Войти</button>
-            </form>
-            <form id="reset-form" class="hidden" onsubmit="return false;">
-                <input type="email" id="reset-email" placeholder="Email" required>
-                <button id="send-code-btn" class="primary-btn">Получить код</button>
-                <div id="code-section" class="hidden">
-                    <input type="text" id="reset-code" placeholder="Код" maxlength="6">
-                    <input type="password" id="new-password" placeholder="Новый пароль">
-                    <button id="confirm-reset-btn" class="primary-btn">Сменить пароль</button>
+                
+                <div id="auth-step-1">
+                    <input type="email" id="auth-email" placeholder="Email" required autocomplete="email">
+                    <input type="password" id="auth-password" placeholder="Пароль" required autocomplete="current-password">
+                    <input type="password" id="auth-confirm-password" class="hidden" placeholder="Подтвердите пароль" autocomplete="new-password">
+                    <div id="forgot-pass-link" class="forgot-link">Забыли пароль?</div>
+                    <button type="button" id="auth-btn" class="primary-btn">Войти</button>
                 </div>
-                <div id="back-to-login" class="forgot-link">Назад</div>
+
+                <div id="auth-step-2" class="hidden">
+                    <select id="pref-lang" class="pref-select">
+                        <option value="" disabled selected>Язык интерфейса</option>
+                        <option value="ru">Русский</option>
+                        <option value="kk">Қазақша</option>
+                    </select>
+                    <select id="pref-edu" class="pref-select">
+                        <option value="" disabled selected>Уровень обучения</option>
+                        <option value="school">Школьник</option>
+                        <option value="student">Студент</option>
+                    </select>
+                    <select id="pref-style" class="pref-select">
+                        <option value="" disabled selected>Стиль ИИ</option>
+                        <option value="brief">Кратко и по делу</option>
+                        <option value="detailed">Подробно</option>
+                        <option value="teacher">Как преподаватель</option>
+                    </select>
+                    <button type="button" id="auth-finish-btn" class="primary-btn">Завершить регистрацию</button>
+                    <div id="back-to-step-1" class="forgot-link" style="text-align: center; margin-top: 15px;">Назад</div>
+                </div>
             </form>
-            <div class="auth-footer">
+            
+            <div class="auth-footer" id="auth-footer-container">
                 <p id="auth-switch-text">Нет аккаунта? <span id="switch-action">Зарегистрироваться</span></p>
                 <p id="auth-error" class="error-text hidden"></p>
-                <p id="auth-success" class="success-text hidden"></p>
             </div>
         </div>
     </div>
 
     <div id="profile-modal" class="modal hidden">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <span class="close-modal" id="close-modal">&times;</span>
             <div class="profile-header">
                 <div class="avatar-circle"></div>
-                <h2 id="profile-email">...</h2>
+                <h2 id="profile-email">Загрузка...</h2>
             </div>
             <div class="profile-details">
                 <div class="detail-item"><span class="label">ID:</span><span id="profile-id" class="value">...</span></div>
-                <div class="detail-item"><span class="label">Статус:</span><span id="profile-status" class="tag">FREE</span></div>
             </div>
-            <button id="logout-btn-modal" class="logout-btn-large">Выйти</button>
+            <button id="logout-btn-modal" class="logout-btn-large">Выйти из аккаунта</button>
         </div>
     </div>
 
-    <div class="container">
-        <div class="top-bar">
-            <button id="open-profile-btn" class="profile-icon-btn hidden">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-            </button>
-        </div>
+    <div class="app-wrapper">
+        
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <img src="/static/logo.png" alt="Logo" class="sidebar-logo">
+                <span class="sidebar-title">Studify.AI</span>
+                <button id="close-sidebar" class="close-btn mobile-only">&times;</button>
+            </div>
+            
+            <div class="sidebar-content">
+                <button id="new-chat-btn" class="sidebar-btn primary-action">
+                    <span>➕</span> Новый чат
+                </button>
+                
+                <div class="streak-box">
+                    <span class="streak-icon">🔥</span>
+                    <span class="streak-text"><span id="streak-days">0</span> дней подряд</span>
+                </div>
 
-        <div id="welcome-screen" class="welcome-box">
-            <div class="logo-wrapper"><img src="/static/logo.png" alt="Logo" class="logo"></div>
-            <h1>Studify<span class="highlight">.AI</span></h1>
-            <p>ИИ-Ассистент для студентов. Пока что тестовая версия</p>
-        </div>
+                <div class="sidebar-user-info">
+                    <div class="info-row">
+                        <span class="label">Аккаунт:</span>
+                        <span id="sidebar-status" class="tag">FREE</span>
+                    </div>
+                </div>
 
-        <div id="chat-box" class="chat-box hidden"></div>
-        <div id="typing-indicator" class="typing-indicator hidden"><span></span><span></span><span></span></div>
+                <div class="sidebar-divider"></div>
 
-        <div class="bottom-panel">
-            <div id="image-preview-container" class="hidden">
-                <div class="preview-wrapper"><img id="image-preview" src="" alt="Preview"><button id="remove-image">✕</button></div>
+                <button id="open-profile-btn" class="sidebar-btn">
+                    <span>👤</span> Личный кабинет
+                </button>
+
+                <div class="dropdown-container">
+                    <button id="lang-toggle-btn" class="sidebar-btn">
+                        <span>🌐</span> Язык (RU)
+                    </button>
+                    <div id="lang-dropdown" class="lang-dropdown hidden">
+                        <div class="lang-option" data-lang="ru">🇷🇺 Русский</div>
+                        <div class="lang-option" data-lang="kk">🇰🇿 Қазақша</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
+        <main class="main-container">
+            <div class="top-bar">
+                <button id="burger-btn" class="burger-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="top-bar-title mobile-only">Studify.AI</div>
             </div>
 
-            <div class="model-selector">
-                <button class="model-btn active" data-model="chat">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Чат
-                </button>
-                <button class="model-btn" data-model="planner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> План
-                </button>
-                <button class="model-btn" data-model="coding">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg> Код
-                </button>
-                <button class="model-btn" data-model="notes">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg> Конспект
-                </button>
-                <button class="model-btn" data-model="search">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Поиск
-                </button>
-                <button class="model-btn" data-model="eye">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Око
-                </button>
+            <div id="welcome-screen" class="welcome-box">
+                <div class="logo-wrapper"><img src="/static/logo.png" alt="Logo" class="logo"></div>
+                <h1>Studify<span class="highlight">.AI</span></h1>
+                <p>Учись, планируй, кодь.</p>
             </div>
 
-            <div class="input-area">
-                <input type="file" id="file-input" accept="image/*" hidden>
-                <button id="attach-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></button>
-                <input type="text" id="user-input" placeholder="Сообщение..." autocomplete="off">
-                <button id="send-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
+            <div id="chat-box" class="chat-box hidden"></div>
+
+            <div class="bottom-panel">
+                
+                <div id="image-preview-container" class="hidden">
+                    <div class="preview-wrapper">
+                        <img id="image-preview" src="" alt="Preview">
+                        <button id="remove-image">&times;</button>
+                    </div>
+                </div>
+
+                <div class="model-selector">
+                    <button class="model-btn active" data-model="chat">Чат</button>
+                    <button class="model-btn" data-model="planner">План</button>
+                    <button class="model-btn" data-model="coding">Код</button>
+                    <button class="model-btn" data-model="notes">Конспект</button>
+                    <button class="model-btn" data-model="search">Поиск</button>
+                    <button class="model-btn" data-model="eye">Око</button>
+                </div>
+
+                <div class="input-area">
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                    <button id="attach-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                    </button>
+                    <input type="text" id="user-input" placeholder="Введите сообщение..." autocomplete="off">
+                    <button id="send-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
+
     <script src="/static/script.js"></script>
 </body>
 </html>
