@@ -6,13 +6,13 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional
 
-# --- FIX: Patch for passlib + new bcrypt ---
+
 import bcrypt
 if not hasattr(bcrypt, '__about__'):
     class About:
         __version__ = bcrypt.__version__
     bcrypt.__about__ = About()
-# -------------------------------------------
+
 
 from fastapi import FastAPI, Request, Depends, HTTPException, status, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
@@ -33,7 +33,7 @@ from sqlalchemy.orm import sessionmaker, Session
 # Mail
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 
-# --- CONFIGURATION ---
+
 load_dotenv()
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
@@ -65,7 +65,7 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# --- MODELS ---
+
 
 def generate_short_id():
     return ''.join(random.choices(string.digits, k=6))
@@ -77,13 +77,13 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     
-    # Profile Fields
+   
     user_id = Column(String, unique=True, default=generate_short_id)
     is_pro = Column(Boolean, default=False)
     reset_code = Column(String, nullable=True)
     streak_days = Column(Integer, default=0) # <-- ДОБАВЛЕНО: Счетчик дней (Огонек)
     
-    # Настройки пользователя
+    
     user_preferences = Column(String, default='{"ui_lang":"ru","edu_level":"student","explain_style":"detailed"}')
 
 class ChatMessage(Base):
@@ -97,11 +97,11 @@ class ChatMessage(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# Pydantic Schemas
+
 class CreateUser(BaseModel):
     email: EmailStr
     password: str
-    preferences: dict = {} # <-- ДОБАВЛЕНО: Принимаем предпочтения при регистрации
+    preferences: dict = {} 
 
 class ChatRequest(BaseModel):
     message: str
@@ -117,7 +117,7 @@ class PasswordResetConfirm(BaseModel):
     code: str
     new_password: str
 
-# --- SECURITY ---
+
 SECRET_KEY = "CHANGE_THIS_IN_PRODUCTION"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30 
@@ -165,12 +165,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
-# --- APP SETUP ---
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="static")
 
-# --- AI CONFIGURATION ---
+
 CURRENT_MODEL = "google/gemini-2.0-pro-exp-02-05:free"
 
 MODELS_CONFIG = {
@@ -200,7 +200,8 @@ MODELS_CONFIG = {
     }
 }
 
-# --- ENDPOINTS ---
+
+
 
 @app.get("/")
 async def read_root(request: Request):
@@ -211,7 +212,7 @@ def register(user: CreateUser, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email занят")
         
-    # Превращаем предпочтения в строку JSON
+    
     prefs_json = json.dumps(user.preferences, ensure_ascii=False) if user.preferences else '{"ui_lang":"ru","edu_level":"student","explain_style":"detailed"}'
     
     new_user = User(
@@ -237,7 +238,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @app.get("/users/me")
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    # <-- ОБНОВЛЕНО: Возвращаем streak_days
     return {
         "email": current_user.email, 
         "user_id": current_user.user_id, 
@@ -276,7 +276,7 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
     if chat_request.image and mode != "eye": 
         config = MODELS_CONFIG["eye"].copy()
 
-    # Применяем предпочтения пользователя
+    
     prefs = json.loads(current_user.user_preferences or "{}")
     system_prompt = config["system"]
     
@@ -286,13 +286,12 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
         style = style_map.get(prefs.get("explain_style"), "Подробно")
         system_prompt += f" (Учитывай контекст: Уровень пользователя - {level}, Требуемый стиль объяснения - {style})."
 
-    # --- 1. СНАЧАЛА СОХРАНЯЕМ НОВОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЯ ---
+    
     new_user_msg = ChatMessage(user_id=current_user.id, session_id=chat_request.session_id, role="user", content=chat_request.message)
     db.add(new_user_msg)
     db.commit()
 
-    # --- 2. УМНАЯ ОЧИСТКА ПАМЯТИ (Автоматическое скользящее окно) ---
-    # Оставляем последние 5 сообщений (2 прошлых пары вопрос-ответ + 1 новый вопрос)
+    
     recent_messages = db.query(ChatMessage).filter(
         ChatMessage.user_id == current_user.id,
         ChatMessage.session_id == chat_request.session_id
@@ -300,7 +299,7 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
     
     keep_ids = [msg.id for msg in recent_messages]
 
-    # Безопасно удаляем из базы всё, что старше этих 5 сообщений
+   
     if keep_ids:
         db.query(ChatMessage).filter(
             ChatMessage.user_id == current_user.id,
@@ -309,8 +308,7 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
         ).delete(synchronize_session=False)
         db.commit()
 
-    # --- 3. ФОРМИРУЕМ ПРАВИЛЬНУЮ ИСТОРИЮ ДЛЯ ИИ ---
-    # Загружаем сохраненные сообщения в хронологическом (прямом) порядке
+    
     history = db.query(ChatMessage).filter(
         ChatMessage.user_id == current_user.id, 
         ChatMessage.session_id == chat_request.session_id
@@ -319,7 +317,6 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
     messages_payload = [{"role": "system", "content": system_prompt}]
 
     for msg in history:
-        # Обработка картинки (прикрепляем только к последнему сообщению пользователя)
         if chat_request.image and msg.id == new_user_msg.id:
             user_content = [{"type": "text", "text": msg.content or "..."}]
             user_content.append({"type": "image_url", "image_url": {"url": chat_request.image}})
@@ -327,7 +324,7 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
         else:
             messages_payload.append({"role": msg.role, "content": msg.content})
 
-    # --- 4. ОТПРАВКА И СТРИМИНГ ---
+    
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",
@@ -347,7 +344,6 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
             try:
                 async with client.stream("POST", OPENROUTER_URL, json=payload, headers=headers, timeout=60.0) as response:
                     if response.status_code != 200:
-                        # Логируем точную ошибку API для дебага в терминале
                         error_text = await response.aread()
                         print(f"ОШИБКА ПРОВАЙДЕРА ИИ: {error_text.decode('utf-8')}")
                         yield f"data: {json.dumps({'error': 'Ошибка API: ' + str(response.status_code)})}\n\n"
@@ -371,7 +367,6 @@ async def chat_endpoint(chat_request: ChatRequest, current_user: User = Depends(
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
         
-        # После завершения стриминга сохраняем финальный ответ ИИ в базу
         if full_reply:
             new_ai_msg = ChatMessage(user_id=current_user.id, session_id=chat_request.session_id, role="assistant", content=full_reply)
             db.add(new_ai_msg)
