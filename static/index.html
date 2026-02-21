@@ -12,6 +12,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -20,15 +22,15 @@
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-box">
             <div class="auth-logo"><img src="/static/logo.png" alt="Logo"></div>
-            <h2 id="auth-title">Вход</h2>
+            <h2 id="auth-title" data-i18n="login_title">Вход</h2>
             <form id="auth-form" onsubmit="return false;">
                 
                 <div id="auth-step-1">
-                    <input type="email" id="auth-email" placeholder="Email" required autocomplete="email">
-                    <input type="password" id="auth-password" placeholder="Пароль" required autocomplete="current-password">
-                    <input type="password" id="auth-confirm-password" class="hidden" placeholder="Подтвердите пароль" autocomplete="new-password">
-                    <div id="forgot-pass-link" class="forgot-link">Забыли пароль?</div>
-                    <button type="button" id="auth-btn" class="primary-btn">Войти</button>
+                    <input type="email" id="auth-email" data-i18n-ph="email_ph" placeholder="Email" required autocomplete="email">
+                    <input type="password" id="auth-password" data-i18n-ph="pass_ph" placeholder="Пароль" required autocomplete="current-password">
+                    <input type="password" id="auth-confirm-password" class="hidden" data-i18n-ph="conf_pass_ph" placeholder="Подтвердите пароль" autocomplete="new-password">
+                    <div id="forgot-pass-link" class="forgot-link" data-i18n="forgot_pass">Забыли пароль?</div>
+                    <button type="button" id="auth-btn" class="primary-btn" data-i18n="login_btn">Войти</button>
                 </div>
 
                 <div id="auth-step-2" class="hidden">
@@ -54,7 +56,10 @@
             </form>
             
             <div class="auth-footer" id="auth-footer-container">
-                <p id="auth-switch-text">Нет аккаунта? <span id="switch-action">Зарегистрироваться</span></p>
+                <p id="auth-switch-text">
+                    <span id="switch-text-prefix" data-i18n="no_account">Нет аккаунта?</span> 
+                    <span id="switch-action" data-i18n="action_reg">Зарегистрироваться</span>
+                </p>
                 <p id="auth-error" class="error-text hidden"></p>
             </div>
         </div>
@@ -70,7 +75,7 @@
             <div class="profile-details">
                 <div class="detail-item"><span class="label">ID:</span><span id="profile-id" class="value">...</span></div>
             </div>
-            <button id="logout-btn-modal" class="logout-btn-large">Выйти из аккаунта</button>
+            <button id="logout-btn-modal" class="logout-btn-large" data-i18n="logout_btn">Выйти из аккаунта</button>
         </div>
     </div>
 
@@ -85,17 +90,20 @@
             
             <div class="sidebar-content">
                 <button id="new-chat-btn" class="sidebar-btn primary-action">
-                    <span>➕</span> Новый чат
+                    <span>➕</span> <span data-i18n="new_chat">Новый чат</span>
                 </button>
                 
                 <div class="streak-box">
                     <span class="streak-icon">🔥</span>
-                    <span class="streak-text"><span id="streak-days">0</span> дней подряд</span>
+                    <span class="streak-text">
+                        <span id="streak-days">0</span> 
+                        <span data-i18n="streak">дней подряд</span>
+                    </span>
                 </div>
 
                 <div class="sidebar-user-info">
                     <div class="info-row">
-                        <span class="label">Аккаунт:</span>
+                        <span class="label" data-i18n="account_label">Аккаунт:</span>
                         <span id="sidebar-status" class="tag">FREE</span>
                     </div>
                 </div>
@@ -103,12 +111,12 @@
                 <div class="sidebar-divider"></div>
 
                 <button id="open-profile-btn" class="sidebar-btn">
-                    <span>👤</span> Личный кабинет
+                    <span>👤</span> <span data-i18n="profile_btn">Личный кабинет</span>
                 </button>
 
                 <div class="dropdown-container">
                     <button id="lang-toggle-btn" class="sidebar-btn">
-                        <span>🌐</span> Язык (RU)
+                        <span>🌐</span> <span id="lang-btn-text" data-i18n="lang_btn">Язык</span>
                     </button>
                     <div id="lang-dropdown" class="lang-dropdown hidden">
                         <div class="lang-option" data-lang="ru">🇷🇺 Русский</div>
@@ -135,7 +143,7 @@
             <div id="welcome-screen" class="welcome-box">
                 <div class="logo-wrapper"><img src="/static/logo.png" alt="Logo" class="logo"></div>
                 <h1>Studify<span class="highlight">.AI</span></h1>
-                <p>Интеллектуальный инструмент для учебы с интегрированным ИИ. Все для студентов. С любовью @sautbekov077❤️</p>
+                <p data-i18n="welcome_desc">Интеллектуальный инструмент для учебы с интегрированным ИИ. Все для студентов. С любовью @sautbekov077❤️</p>
             </div>
 
             <div id="chat-box" class="chat-box hidden"></div>
@@ -150,12 +158,12 @@
                 </div>
 
                 <div class="model-selector">
-                    <button class="model-btn active" data-model="chat">Чат</button>
-                    <button class="model-btn" data-model="planner">План</button>
-                    <button class="model-btn" data-model="coding">Код</button>
-                    <button class="model-btn" data-model="notes">Конспект</button>
-                    <button class="model-btn" data-model="search">Поиск</button>
-                    <button class="model-btn" data-model="eye">Око</button>
+                    <button class="model-btn active" data-model="chat" data-i18n="model_chat">Чат</button>
+                    <button class="model-btn" data-model="planner" data-i18n="model_plan">План</button>
+                    <button class="model-btn" data-model="coding" data-i18n="model_code">Код</button>
+                    <button class="model-btn" data-model="notes" data-i18n="model_notes">Конспект</button>
+                    <button class="model-btn" data-model="search" data-i18n="model_search">Поиск</button>
+                    <button class="model-btn" data-model="eye" data-i18n="model_eye">Око</button>
                 </div>
 
                 <div class="input-area">
@@ -163,7 +171,7 @@
                     <button id="attach-btn">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
                     </button>
-                    <input type="text" id="user-input" placeholder="Введите сообщение..." autocomplete="off">
+                    <input type="text" id="user-input" data-i18n-ph="input_ph" placeholder="Введите сообщение..." autocomplete="off">
                     <button id="send-btn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
