@@ -1,4 +1,7 @@
 ![Preview](preview.png)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Made in](https://img.shields.io/badge/made%20in-Kazakhstan-green)
 Studify.ai
 
 Интеллектуальный инструмент для учебы с интегрированным ИИ.
