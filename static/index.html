@@ -12,7 +12,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <link rel="stylesheet" href="/static/style.css">
@@ -34,150 +33,151 @@
                 </div>
 
                 <div id="auth-step-2" class="hidden">
-                    <select id="pref-lang" class="pref-select">
-                        <option value="" disabled selected>Язык интерфейса</option>
-                        <option value="ru">Русский</option>
-                        <option value="kk">Қазақша</option>
-                    </select>
-                    <select id="pref-edu" class="pref-select">
-                        <option value="" disabled selected>Уровень обучения</option>
-                        <option value="school">Школьник</option>
-                        <option value="student">Студент</option>
-                    </select>
-                    <select id="pref-style" class="pref-select">
-                        <option value="" disabled selected>Стиль ИИ</option>
-                        <option value="brief">Кратко и по делу</option>
-                        <option value="detailed">Подробно</option>
-                        <option value="teacher">Как преподаватель</option>
-                    </select>
-                    <button type="button" id="auth-finish-btn" class="primary-btn">Завершить регистрацию</button>
-                    <div id="back-to-step-1" class="forgot-link" style="text-align: center; margin-top: 15px;">Назад</div>
+                    <h3 style="margin-bottom: 15px; font-size: 18px; color: #333;">Настроим ИИ под вас</h3>
+                    
+                    <div class="pref-section">
+                        <label>Роль:</label>
+                        <div class="pref-group" id="pref-role">
+                            <button type="button" class="pref-btn active" data-val="school">🎒 Школьник</button>
+                            <button type="button" class="pref-btn" data-val="student">🎓 Студент вуза</button>
+                            <button type="button" class="pref-btn" data-val="self">🧠 Самоучка</button>
+                            <button type="button" class="pref-btn" data-val="work">💼 Работаю</button>
+                        </div>
+                    </div>
+
+                    <div class="pref-section">
+                        <label>Главная цель:</label>
+                        <div class="pref-group" id="pref-goal">
+                            <button type="button" class="pref-btn active" data-val="homework">📝 Домашка / Учеба</button>
+                            <button type="button" class="pref-btn" data-val="exams">🎯 Экзамены</button>
+                            <button type="button" class="pref-btn" data-val="coding">💻 Программирование</button>
+                            <button type="button" class="pref-btn" data-val="languages">🌍 Языки</button>
+                        </div>
+                    </div>
+
+                    <div class="pref-section">
+                        <label>Характер ИИ:</label>
+                        <div class="pref-group" id="pref-style">
+                            <button type="button" class="pref-btn active" data-val="friendly">🤗 Дружелюбный</button>
+                            <button type="button" class="pref-btn" data-val="strict">🧐 Академичный (Строгий)</button>
+                            <button type="button" class="pref-btn" data-val="socratic">🤔 Ментор (Наводящие вопросы)</button>
+                            <button type="button" class="pref-btn" data-val="brief">⚡ Кратко и по делу</button>
+                        </div>
+                    </div>
+
+                    <button type="button" id="back-to-step-1" class="secondary-btn">Назад</button>
+                    <button type="button" id="auth-finish-btn" class="primary-btn">Завершить и Войти</button>
+                </div>
+
+                <p id="auth-error" class="error-text hidden"></p>
+                <div id="auth-footer-container" style="margin-top: 15px; font-size: 14px;">
+                    <span id="switch-text-prefix" data-i18n="no_account">Нет аккаунта?</span> 
+                    <span id="auth-switch-text" style="cursor: pointer; color: #1ABC9C; font-weight: bold;">
+                        <span id="switch-action" data-i18n="action_reg">Зарегистрироваться</span>
+                    </span>
                 </div>
             </form>
-            
-            <div class="auth-footer" id="auth-footer-container">
-                <p id="auth-switch-text">
-                    <span id="switch-text-prefix" data-i18n="no_account">Нет аккаунта?</span> 
-                    <span id="switch-action" data-i18n="action_reg">Зарегистрироваться</span>
-                </p>
-                <p id="auth-error" class="error-text hidden"></p>
-            </div>
-        </div>
-    </div>
-
-    <div id="profile-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-modal" id="close-modal">&times;</span>
-            <div class="profile-header">
-                <div class="avatar-circle"></div>
-                <h2 id="profile-email">Загрузка...</h2>
-            </div>
-            <div class="profile-details">
-                <div class="detail-item"><span class="label">ID:</span><span id="profile-id" class="value">...</span></div>
-            </div>
-            <button id="logout-btn-modal" class="logout-btn-large" data-i18n="logout_btn">Выйти из аккаунта</button>
         </div>
     </div>
 
     <div class="app-wrapper">
-        
-        <aside id="sidebar" class="sidebar">
+        <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+        <div id="sidebar" class="sidebar">
             <div class="sidebar-header">
                 <img src="/static/logo.png" alt="Logo" class="sidebar-logo">
-                <span class="sidebar-title">Studify.AI</span>
+                <span class="sidebar-title">Studify</span>
                 <button id="close-sidebar" class="close-btn mobile-only">&times;</button>
             </div>
             
             <div class="sidebar-content">
-                <button id="new-chat-btn" class="sidebar-btn primary-action">
-                    <span>➕</span> <span data-i18n="new_chat">Новый чат</span>
+                <button id="new-chat-btn" class="sidebar-btn primary-action" data-i18n="new_chat">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>
+                    Новый чат
                 </button>
                 
                 <div class="streak-box">
-                    <span class="streak-icon">🔥</span>
-                    <span class="streak-text">
-                        <span id="streak-days">0</span> 
-                        <span data-i18n="streak">дней подряд</span>
-                    </span>
-                </div>
-
-                <div class="sidebar-user-info">
-                    <div class="info-row">
-                        <span class="label" data-i18n="account_label">Аккаунт:</span>
-                        <span id="sidebar-status" class="tag">FREE</span>
-                    </div>
+                    <span>🔥</span>
+                    <div><div class="streak-text"><span id="streak-days">0</span> <span data-i18n="streak">дней подряд</span></div></div>
                 </div>
 
                 <div class="sidebar-divider"></div>
+                
+                <div class="sidebar-user-info">
+                    <div class="info-row">
+                        <span class="label" data-i18n="account_label">Аккаунт:</span>
+                        <span id="sidebar-status" class="tag">Basic</span>
+                    </div>
+                </div>
 
-                <button id="open-profile-btn" class="sidebar-btn">
-                    <span>👤</span> <span data-i18n="profile_btn">Личный кабинет</span>
-                </button>
-
-                <div class="dropdown-container">
-                    <button id="lang-toggle-btn" class="sidebar-btn">
-                        <span>🌐</span> <span id="lang-btn-text" data-i18n="lang_btn">Язык</span>
-                    </button>
+                <button id="open-profile-btn" class="sidebar-btn" data-i18n="profile_btn">👤 Личный кабинет</button>
+                
+                <div class="lang-selector">
+                    <button id="lang-toggle-btn" class="sidebar-btn"><span>🌐</span> Язык (RU)</button>
                     <div id="lang-dropdown" class="lang-dropdown hidden">
                         <div class="lang-option" data-lang="ru">🇷🇺 Русский</div>
                         <div class="lang-option" data-lang="kk">🇰🇿 Қазақша</div>
                     </div>
                 </div>
             </div>
-        </aside>
+        </div>
 
-        <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
-
-        <main class="main-container">
+        <div class="main-content">
             <div class="top-bar">
-                <button id="burger-btn" class="burger-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
+                <button id="burger-btn" class="burger-btn mobile-only">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"></path></svg>
                 </button>
                 <div class="top-bar-title mobile-only">Studify.AI</div>
             </div>
 
-            <div id="welcome-screen" class="welcome-box">
-                <div class="logo-wrapper"><img src="/static/logo.png" alt="Logo" class="logo"></div>
-                <h1>Studify<span class="highlight">.AI</span></h1>
-                <p data-i18n="welcome_desc">Интеллектуальный инструмент для учебы с интегрированным ИИ. Все для студентов. С любовью @sautbekov077❤️</p>
-            </div>
+            <div class="chat-container">
+                <div id="welcome-screen" class="welcome-screen">
+                    <img src="/static/logo.png" alt="Studify Logo" class="welcome-logo">
+                    <h2>Studify.AI</h2>
+                    <p data-i18n="welcome_desc">Интеллектуальный инструмент для учебы с интегрированным ИИ.</p>
+                </div>
 
-            <div id="chat-box" class="chat-box hidden"></div>
+                <div id="chat-box" class="chat-box hidden"></div>
 
-            <div class="bottom-panel">
-                
-                <div id="image-preview-container" class="hidden">
-                    <div class="preview-wrapper">
-                        <img id="image-preview" src="" alt="Preview">
-                        <button id="remove-image">&times;</button>
+                <div class="bottom-panel">
+                    <div id="image-preview-container" class="hidden">
+                        <div class="preview-wrapper">
+                            <img id="image-preview" src="" alt="Preview">
+                            <button id="remove-image">&times;</button>
+                        </div>
+                    </div>
+                    
+                    <div class="model-selector">
+                        <button class="model-btn active" data-model="chat" data-i18n="model_chat">Чат</button>
+                        <button class="model-btn" data-model="planner" data-i18n="model_plan">План</button>
+                        <button class="model-btn" data-model="coding" data-i18n="model_code">Код</button>
+                        <button class="model-btn" data-model="notes" data-i18n="model_notes">Конспект</button>
+                        <button class="model-btn" data-model="search" data-i18n="model_search">Поиск</button>
+                        <button class="model-btn" data-model="eye" data-i18n="model_eye">Око</button>
+                    </div>
+
+                    <div class="input-area">
+                        <input type="file" id="file-input" accept="image/*" hidden>
+                        <button id="attach-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        </button>
+                        <input type="text" id="user-input" data-i18n-ph="input_ph" placeholder="Введите сообщение...">
+                        <button id="send-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
                     </div>
                 </div>
-
-                <div class="model-selector">
-                    <button class="model-btn active" data-model="chat" data-i18n="model_chat">Чат</button>
-                    <button class="model-btn" data-model="planner" data-i18n="model_plan">План</button>
-                    <button class="model-btn" data-model="coding" data-i18n="model_code">Код</button>
-                    <button class="model-btn" data-model="notes" data-i18n="model_notes">Конспект</button>
-                    <button class="model-btn" data-model="search" data-i18n="model_search">Поиск</button>
-                    <button class="model-btn" data-model="eye" data-i18n="model_eye">Око</button>
-                </div>
-
-                <div class="input-area">
-                    <input type="file" id="file-input" accept="image/*" hidden>
-                    <button id="attach-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-                    </button>
-                    <input type="text" id="user-input" data-i18n-ph="input_ph" placeholder="Введите сообщение..." autocomplete="off">
-                    <button id="send-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
-                </div>
             </div>
-        </main>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-content">
+            <span id="close-modal" class="close-modal">&times;</span>
+            <div class="avatar-circle"></div>
+            <h3 id="profile-email">email@example.com</h3>
+            <p style="color: #888; font-size: 14px; margin-top: 5px;">ID: <span id="profile-id">000000</span></p>
+            <button id="logout-btn-modal" class="logout-btn-large" data-i18n="logout_btn">Выйти из аккаунта</button>
+        </div>
     </div>
 
     <script src="/static/script.js"></script>
