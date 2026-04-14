@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Studify.AI</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png"> 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="auth-overlay" class="auth-overlay hidden">
+        <div class="auth-box">
+            <div class="auth-logo"><img src="/static/logo.png" alt="Logo"></div>
+            <h2 id="auth-title" data-i18n="login_title">Вход</h2>
+            
+            <div id="auth-form">
+                <input type="email" id="auth-email" data-i18n-ph="email_ph" placeholder="Email" required>
+                
+                <div class="password-wrapper">
+                    <input type="password" id="auth-password" data-i18n-ph="pass_ph" placeholder="Пароль" required>
+                    <span class="toggle-password" data-target="auth-password">👁️</span>
+                </div>
+
+                <div id="reg-fields" class="hidden">
+                    <div class="password-wrapper">
+                        <input type="password" id="auth-confirm-password" data-i18n-ph="conf_pass_ph" placeholder="Повторите пароль">
+                        <span class="toggle-password" data-target="auth-confirm-password">👁️</span>
+                    </div>
+                        <input type="text" id="auth-access-code" data-i18n-ph="access_code_ph" placeholder="Код доступа (если есть)">
+                </div>
+
+                <div id="auth-error" class="error-msg hidden"></div>
+                <button id="auth-btn" class="primary-btn" data-i18n="login_btn">Войти</button>
+            </div>
+
+            <div id="auth-footer-container">
+                <p id="auth-switch-text"><span id="switch-text-prefix" data-i18n="no_account">Нет аккаунта?</span> <span id="switch-auth-mode" data-i18n="action_reg">Регистрация</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-notification" class="toast hidden" data-i18n="toast_registration_success">Успешная регистрация!</div>
+
+    <div class="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="auth-logo"><img src="/static/logo.png" alt="Logo" style="width: 50px; margin-bottom: 10px;"></div>
+                <button id="sidebar-close-btn" class="sidebar-close mobile-only" data-i18n-aria="sidebar_close_aria" aria-label="Закрыть меню">✕</button>
+                
+                <div id="user-dashboard" class="dashboard-panel hidden">
+                    <div class="user-plan"><span data-i18n="dashboard_plan">План:</span> <span id="plan-badge">Free</span></div>
+                    <div class="user-level"><span data-i18n="dashboard_level">Уровень:</span> <span id="level-display">1</span></div>
+                    <div class="user-xp"><span data-i18n="dashboard_xp">XP:</span> <span id="xp-display">0</span> / <span id="xp-next">100</span></div>
+                    <div class="progress-bar-bg">
+                        <div id="xp-progress" class="progress-bar-fill"></div>
+                    </div>
+                </div>
+
+                <div id="lang-switcher" class="lang-switcher">
+                    <button class="lang-btn" data-lang="ru" type="button">RU</button>
+                    <button class="lang-btn" data-lang="kk" type="button">KK</button>
+                </div>
+
+                <button id="new-chat-btn" class="hidden" data-i18n="new_chat_btn">+ Новый чат</button>
+            </div>
+            <div class="chat-history-list" id="chat-history-list">
+                </div>
+            <div class="sidebar-footer">
+                <button id="profile-btn" class="profile-btn hidden">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span data-i18n="profile_btn">Профиль</span>
+                </button>
+            </div>
+        </div>
+        <div id="sidebar-backdrop" class="sidebar-backdrop hidden"></div>
+
+        <div class="main-content">
+            <div class="chat-header">
+                <button id="mobile-menu-btn" class="mobile-only">☰</button>
+                <div class="header-title">Studify.AI</div>
+                
+                <div class="action-buttons-container hidden" id="action-buttons">
+                    <button id="mode-oko-btn" class="action-btn" data-i18n="mode_oko_btn">Око</button>
+                    <button id="open-quiz-btn" class="action-btn feature-btn" data-i18n="quiz_btn">Quizzes</button>
+                    <button id="open-flashcards-btn" class="action-btn feature-btn" data-i18n="flashcards_btn">Flash-cards</button>
+                </div>
+            </div>
+
+            <div class="chat-container">
+                <div id="welcome-screen" class="welcome-screen">
+                    <img src="/static/logo.png" alt="Logo">
+                    <h1>Studify.AI</h1>
+                    <p data-i18n="welcome_desc">Интеллектуальный инструмент для учебы с интегрированным ИИ.</p>
+                </div>
+                
+                <div class="chat-box" id="chat-box"></div>
+                
+                <div class="input-area">
+                    <div id="image-preview-container" class="hidden">
+                        <img id="image-preview" src="" alt="Preview">
+                        <button id="remove-image">&times;</button>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="file" id="file-input" accept="image/*" hidden>
+                        <button id="attach-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        </button>
+                        <input type="text" id="user-input" data-i18n-ph="input_ph" placeholder="Введите сообщение...">
+                        <button id="send-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="modal hidden">
+        <div class="modal-content profile-content">
+            <div class="profile-topbar">
+                <span class="close-modal" id="close-profile">←</span>
+                <button class="profile-settings-btn" data-i18n-aria="settings_aria" aria-label="Настройки">⚙</button>
+            </div>
+            <div class="avatar-circle"></div>
+            <h2 data-i18n="profile_title">Профиль</h2>
+            <p id="profile-email"></p>
+
+            <div class="plan-switch">
+                <div class="plan-active" data-i18n="plan_free_upper">БЕСПЛАТНО</div>
+                <div class="plan-divider"></div>
+                <div data-i18n="plan_pro_upper">ПРО</div>
+            </div>
+
+            <div class="profile-cards">
+                <div class="profile-card-item" data-i18n="account_card">Аккаунт</div>
+                <div id="ai-settings-item" class="profile-card-item clickable" data-i18n="ai_settings_item">Настройки ИИ</div>
+            </div>
+
+            <div class="promo-code-block">
+                <label for="promo-code-input" data-i18n="promo_label">Промокод на PRO</label>
+                <div class="promo-code-row">
+                    <input id="promo-code-input" type="text" data-i18n-ph="promo_input_ph" placeholder="Введите код">
+                    <button id="apply-promo-btn" type="button" data-i18n="promo_activate_btn">Активировать</button>
+                </div>
+                <p id="promo-code-status" class="promo-status hidden"></p>
+            </div>
+
+            <button id="logout-btn" class="logout-btn-large" data-i18n="logout_btn">Выйти</button>
+        </div>
+    </div>
+
+    <div id="ai-settings-modal" class="modal hidden">
+        <div class="modal-content ai-settings-content">
+            <span class="close-modal" id="close-ai-settings">&times;</span>
+            <h2 data-i18n="ai_settings_title">Настройки ИИ</h2>
+
+            <div class="setting-group">
+                <label for="speech-style-select" data-i18n="speech_style_label">Стиль речи</label>
+                <select id="speech-style-select">
+                    <option value="friendly" data-i18n="speech_friendly">Дружелюбный</option>
+                    <option value="neutral" data-i18n="speech_neutral">Нейтральный</option>
+                    <option value="formal" data-i18n="speech_formal">Формальный</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="response-size-select" data-i18n="response_size_label">Размер ответа</label>
+                <select id="response-size-select">
+                    <option value="short" data-i18n="size_short">Короткий</option>
+                    <option value="medium" data-i18n="size_medium">Средний</option>
+                    <option value="detailed" data-i18n="size_detailed">Подробный</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label for="creativity-range" data-i18n="creativity_label">Креативность</label>
+                <input id="creativity-range" type="range" min="0" max="100" value="35">
+                <div id="creativity-value" class="setting-hint">35%</div>
+            </div>
+
+            <button id="save-ai-settings" class="primary-btn" data-i18n="save_btn">Сохранить</button>
+        </div>
+    </div>
+
+    <div id="quiz-modal" class="modal hidden">
+        <div class="modal-content quiz-content">
+            <span id="close-quiz" class="close-modal">&times;</span>
+            <div class="modal-header">
+                <h2 data-i18n="quiz_title">Квиз по чату</h2>
+            </div>
+            <div id="quiz-container">
+                <p class="text-muted" data-i18n="quiz_loading">Загрузка квиза...</p>
+            </div>
+            <div class="quiz-footer hidden" id="quiz-footer">
+                <button id="next-question-btn" class="primary-btn" data-i18n="next_question_btn">Следующий вопрос</button>
+                <button id="more-questions-btn" class="primary-btn hidden">Дополнить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="flashcard-modal" class="modal hidden">
+        <div class="modal-content flashcard-content">
+            <span id="close-flashcards" class="close-modal">&times;</span>
+            <div class="modal-header">
+                <h2 data-i18n="flashcards_title">Флешкарты</h2>
+            </div>
+            
+            <div class="flashcard-scene">
+                <div id="flashcard-element" class="flashcard-card">
+                    <div class="flashcard-face flashcard-front">
+                        <p id="fc-question" data-i18n="fc_question_ph">Вопрос появится здесь</p>
+                    </div>
+                    <div class="flashcard-face flashcard-back">
+                        <p id="fc-answer" data-i18n="fc_answer_ph">Ответ появится здесь</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flashcard-controls">
+                <button id="fc-dont-know-btn" class="fc-btn danger" data-i18n="fc_dont_know">Не знаю</button>
+                <span id="fc-counter">1 / 15</span>
+                <button id="fc-know-btn" class="fc-btn success" data-i18n="fc_know">Знаю</button>
+            </div>
+            <div class="quiz-footer" style="margin-top:12px;">
+                <button id="append-flashcards-btn" class="primary-btn">Дополнить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script src="/static/lang.js"></script>
+</body>
+</html>
