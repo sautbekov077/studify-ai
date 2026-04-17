@@ -26,10 +26,15 @@ from config import (
     FREE_DAILY_FLASHCARDS,
     PRO_DAILY_MESSAGES,
 )
-from database import get_db, User, Chat, Message, AccessCode, Quiz, QuizQuestion, Flashcard
+from database import get_db, User, Chat, Message, AccessCode, Quiz, QuizQuestion, Flashcard, init_db
 from auth import get_password_hash, verify_password, create_access_token, get_current_user
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory=".")

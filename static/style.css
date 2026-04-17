@@ -839,7 +839,7 @@ body {
     .main-content { width: 100%; }
 
     .chat-header {
-        min-height: 114px;
+        min-height: 92px;
         justify-content: center;
         position: relative;
     }
@@ -855,26 +855,31 @@ body {
         cursor: pointer;
     }
 
-    .header-title { font-size: 24px; font-family: "Sora", "Manrope", sans-serif; }
+    .header-title { font-size: 20px; font-family: "Sora", "Manrope", sans-serif; }
 
     .action-buttons-container {
         position: fixed;
         left: 12px;
         right: 12px;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 108px);
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: minmax(130px, 1fr);
-        gap: 10px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 74px);
+        display: flex;
+        justify-content: flex-start;
+        gap: 8px;
         overflow-x: auto;
-        padding-bottom: 2px;
+        padding: 0 2px 2px;
         z-index: 1100;
+        scrollbar-width: none;
     }
+    .action-buttons-container::-webkit-scrollbar { display: none; }
 
     .action-btn {
-        min-height: 64px;
-        font-size: 14px;
-        border-width: 4px;
+        min-height: auto;
+        flex: 0 0 auto;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        border-width: 2px;
+        border-radius: 16px;
         background: #f8fafb;
     }
 
@@ -886,8 +891,15 @@ body {
         color: #1f9d85;
     }
 
-    .chat-box {
-        padding: 16px 16px 270px;
+    .chat-box { padding: 14px 15px 170px; }
+    .message { font-size: 14px; padding: 12px 14px; }
+
+    .msg-ai table {
+        display: block;
+        width: max-content;
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
     }
 
     .welcome-screen {
@@ -912,18 +924,32 @@ body {
         right: 0;
         bottom: 0;
         z-index: 1090;
-        padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 14px);
+        padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 10px);
         background: rgba(245, 247, 249, 0.94);
     }
 
     .input-wrapper {
-        min-height: 78px;
-        border-radius: 42px;
-        padding: 8px 10px;
+        min-height: 56px;
+        border-radius: 22px;
+        padding: 5px 8px;
     }
 
-    #user-input { font-size: 16px; }
-    #send-btn, #attach-btn { width: 56px; height: 56px; }
+    #user-input {
+        font-size: 16px;
+        line-height: 1.35;
+        padding: 0 8px;
+    }
+
+    #send-btn, #attach-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    #send-btn svg,
+    #attach-btn svg {
+        width: 18px;
+        height: 18px;
+    }
 
     .modal { align-items: stretch; }
 

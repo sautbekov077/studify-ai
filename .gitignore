@@ -1,0 +1,7 @@
+.venv
+__pycache__
+studify.db
+.env
+refractor frontend/
+Procfile
+.railwayignore
